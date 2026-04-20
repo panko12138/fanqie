@@ -47,23 +47,33 @@ class NotificationManager(QObject):
 
     def show_pomodoro_complete_notification(self):
         if self.notification_enabled:
-            QMessageBox.information(
-                None,
-                "番茄完成！",
-                "太棒了！你完成了一个番茄！\n现在休息一下吧。",
-                QMessageBox.Ok
-            )
-            logger.info("显示番茄完成通知")
+            try:
+                from PyQt5.QtWidgets import QSystemTrayIcon
+                tray = QSystemTrayIcon()
+                tray.showMessage(
+                    "番茄完成！",
+                    "太棒了！你完成了一个番茄！\n现在休息一下吧。",
+                    QSystemTrayIcon.Information,
+                    3000
+                )
+                logger.info("显示番茄完成通知")
+            except Exception as e:
+                logger.warning(f"显示通知失败: {e}")
 
     def show_break_complete_notification(self):
         if self.notification_enabled:
-            QMessageBox.information(
-                None,
-                "休息结束！",
-                "休息时间到！\n准备开始下一个番茄吧！",
-                QMessageBox.Ok
-            )
-            logger.info("显示休息结束通知")
+            try:
+                from PyQt5.QtWidgets import QSystemTrayIcon
+                tray = QSystemTrayIcon()
+                tray.showMessage(
+                    "休息结束！",
+                    "休息时间到！\n准备开始下一个番茄吧！",
+                    QSystemTrayIcon.Information,
+                    3000
+                )
+                logger.info("显示休息结束通知")
+            except Exception as e:
+                logger.warning(f"显示通知失败: {e}")
 
     def get_break_messages(self) -> list:
         return [

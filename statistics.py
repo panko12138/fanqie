@@ -42,10 +42,11 @@ class StatisticsManager:
                 and_(DailyStat.date >= start_date, DailyStat.date <= end_date)
             ).order_by(DailyStat.date).all()
 
+            stats_dict = {s.date: s for s in stats}
             result = []
             current_date = start_date
             while current_date <= end_date:
-                stat = next((s for s in stats if s.date == current_date), None)
+                stat = stats_dict.get(current_date)
                 if stat:
                     result.append({
                         "date": stat.date,
@@ -68,10 +69,11 @@ class StatisticsManager:
                 and_(DailyStat.date >= start_date, DailyStat.date <= end_date)
             ).order_by(DailyStat.date).all()
 
+            stats_dict = {s.date: s for s in stats}
             result = []
             current_date = start_date
             while current_date <= end_date:
-                stat = next((s for s in stats if s.date == current_date), None)
+                stat = stats_dict.get(current_date)
                 if stat:
                     result.append({
                         "date": stat.date,
@@ -101,30 +103,86 @@ class StatisticsManager:
                 "total": total,
             }
 
-    def get_total_stats(self) -> Dict:
+    def get_total_stats(self, session=None) -> Dict:
+        if session:
+            return self._get_total_stats_with_session(session)
         with self.db_manager.session() as session:
-            total_pomodoros = session.query(func.count(PomodoroSession.id)).filter(
-                PomodoroSession.completed == True
-            ).scalar() or 0
+            return self._get_total_stats_with_session(session)
 
-            total_focus_time = session.query(func.sum(PomodoroSession.duration)).filter(
-                PomodoroSession.completed == True
-            ).scalar() or 0
+    def _get_total_stats_with_session(self, session) -> Dict:
+        total_pomodoros = session.query(func.count(PomodoroSession.id)).filter(
+            PomodoroSession.completed == True
+        ).scalar() or 0
 
-            completed_tasks = session.query(func.count(Task.id)).filter(
-                Task.status == "已完成"
-            ).scalar() or 0
+        total_focus_time = session.query(func.sum(PomodoroSession.duration)).filter(
+            PomodoroSession.completed == True
+        ).scalar() or 0
 
-            consecutive_days = self._calculate_consecutive_days(session)
-            max_consecutive_days = self._calculate_max_consecutive_days(session)
+        completed_tasks = session.query(func.count(Task.id)).filter(
+            Task.status == "已完成"
+        ).scalar() or 0
 
-            return {
-                "total_pomodoros": total_pomodoros,
-                "total_focus_time": total_focus_time,
-                "completed_tasks": completed_tasks,
-                "consecutive_days": consecutive_days,
-                "max_consecutive_days": max_consecutive_days,
-            }
+        consecutive_days = self._calculate_consecutive_days(session)
+        max_consecutive_days = self._calculate_max_consecutive_days(session)
+
+        return {
+            "total_pomodoros": total_pomodoros,
+            "total_focus_time": total_focus_time,
+            "completed_tasks": completed_tasks,
+            "consecutive_days": consecutive_days,
+            "max_consecutive_days": max_consecutive_days,
+        }
+
+    def get_subject_distribution(self, session=None) -> Dict[str, int]:
+        if session:
+            return self._get_subject_distribution_with_session(session)
+        with self.db_manager.session() as session:
+            return self._get_subject_distribution_with_session(session)
+
+    def _get_subject_distribution_with_session(self, session) -> Dict[str, int]:
+        result = session.query(
+            Task.subject,
+            func.sum(Task.actual_pomodoros).label("total")
+        ).filter(Task.actual_pomodoros > 0).group_by(Task.subject).all()
+
+        distribution = {row[0]: row[1] for row in result}
+        total = sum(distribution.values())
+        return {
+            "distribution": distribution,
+            "total": total,
+        }
+
+    def get_month_stats(self, session=None) -> List[Dict]:
+        if session:
+            return self._get_month_stats_with_session(session)
+        with self.db_manager.session() as session:
+            return self._get_month_stats_with_session(session)
+
+    def _get_month_stats_with_session(self, session) -> List[Dict]:
+        start_date, end_date = get_month_range()
+        stats = session.query(DailyStat).filter(
+            and_(DailyStat.date >= start_date, DailyStat.date <= end_date)
+        ).order_by(DailyStat.date).all()
+
+        stats_dict = {s.date: s for s in stats}
+        result = []
+        current_date = start_date
+        while current_date <= end_date:
+            stat = stats_dict.get(current_date)
+            if stat:
+                result.append({
+                    "date": stat.date,
+                    "total_pomodoros": stat.total_pomodoros,
+                    "total_focus_time": stat.total_focus_time,
+                })
+            else:
+                result.append({
+                    "date": current_date,
+                    "total_pomodoros": 0,
+                    "total_focus_time": 0,
+                })
+            current_date += timedelta(days=1)
+        return result
 
     def _calculate_consecutive_days(self, session) -> int:
         today = datetime.now().date()
@@ -188,11 +246,18 @@ class StatisticsManager:
         condition = achievement.condition
         num = self._extract_number(condition)
 
-        if "total_pomodoros" in condition:
-            return total_stats["total_pomodoros"] >= num
+        if "exam_days_left" in condition and "total_pomodoros" in condition:
+            if extra_data and "exam_days_left" in extra_data:
+                exam_days = extra_data["exam_days_left"]
+                return exam_days is not None and exam_days <= 30 and total_stats["total_pomodoros"] >= 1
+            return False
 
-        if "consecutive_days" in condition:
-            return total_stats["consecutive_days"] >= num
+        if "all_subjects_pomodoros" in condition:
+            if extra_data and "subject_distribution" in extra_data:
+                subject_dist = extra_data["subject_distribution"]["distribution"]
+                subjects = ["政治", "英语", "数学", "专业课", "其他"]
+                return all(subject_dist.get(subject, 0) >= 10 for subject in subjects)
+            return False
 
         if "single_subject_pomodoros" in condition:
             if extra_data and "subject_distribution" in extra_data:
@@ -206,18 +271,11 @@ class StatisticsManager:
                 return month_total >= num
             return False
 
-        if "all_subjects_pomodoros" in condition:
-            if extra_data and "subject_distribution" in extra_data:
-                subject_dist = extra_data["subject_distribution"]["distribution"]
-                subjects = ["政治", "英语", "数学", "专业课", "其他"]
-                return all(subject_dist.get(subject, 0) >= 10 for subject in subjects)
-            return False
+        if "consecutive_days" in condition:
+            return total_stats["consecutive_days"] >= num
 
-        if "exam_days_left" in condition and "total_pomodoros" in condition:
-            if extra_data and "exam_days_left" in extra_data:
-                exam_days = extra_data["exam_days_left"]
-                return exam_days is not None and exam_days <= num and total_stats["total_pomodoros"] >= 1
-            return False
+        if "total_pomodoros" in condition:
+            return total_stats["total_pomodoros"] >= num
 
         return False
 
@@ -226,11 +284,11 @@ class StatisticsManager:
         
         try:
             with self.db_manager.session() as session:
-                total_stats = self.get_total_stats()
+                total_stats = self._get_total_stats_with_session(session)
                 
                 extra_data = {
-                    "subject_distribution": self.get_subject_distribution(),
-                    "month_stats": self.get_month_stats(),
+                    "subject_distribution": self._get_subject_distribution_with_session(session),
+                    "month_stats": self._get_month_stats_with_session(session),
                 }
                 
                 achievements = session.query(Achievement).all()

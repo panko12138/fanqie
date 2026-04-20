@@ -61,6 +61,7 @@ class PomodoroIndicator(QWidget):
         self.completed = 0
         self.total = 4
         self.theme_manager = ThemeManager()
+        self._dots = []
         self._setup_ui()
         self.theme_manager.theme_changed.connect(self._update_dots)
     
@@ -69,6 +70,11 @@ class PomodoroIndicator(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(8)
         self.layout.setAlignment(Qt.AlignCenter)
+        for _ in range(self.total):
+            dot = QLabel()
+            dot.setFixedSize(12, 12)
+            self.layout.addWidget(dot)
+            self._dots.append(dot)
         self._update_dots()
     
     def set_completed(self, completed: int):
@@ -77,27 +83,24 @@ class PomodoroIndicator(QWidget):
     
     def set_total(self, total: int):
         self.total = total
+        colors = self.theme_manager.get_colors()
+        
+        # 调整点的数量
+        while len(self._dots) < total:
+            dot = QLabel()
+            dot.setFixedSize(12, 12)
+            self.layout.addWidget(dot)
+            self._dots.append(dot)
+        
+        while len(self._dots) > total:
+            dot = self._dots.pop()
+            dot.setParent(None)
+        
         self._update_dots()
     
     def _update_dots(self):
         colors = self.theme_manager.get_colors()
         
-        for i in reversed(range(self.layout.count())):
-            self.layout.itemAt(i).widget().setParent(None)
-        
-        for i in range(self.total):
-            dot = QLabel()
-            dot.setFixedSize(12, 12)
-            
-            if i < self.completed:
-                bg_color = colors["focus"]
-            else:
-                bg_color = colors["border"]
-            
-            dot.setStyleSheet(f"""
-                QLabel {{
-                    background-color: {bg_color};
-                    border-radius: 6px;
-                }}
-            """)
-            self.layout.addWidget(dot)
+        for i, dot in enumerate(self._dots):
+            bg_color = colors["focus"] if i < self.completed else colors["border"]
+            dot.setStyleSheet(f"background-color: {bg_color}; border-radius: 6px;")

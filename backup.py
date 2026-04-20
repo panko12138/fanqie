@@ -13,8 +13,23 @@ logger = get_logger(__name__)
 class BackupManager:
     def __init__(self):
         self.db_manager = get_db_manager()
-        self.backup_dir = os.path.join(get_data_path(), "backups")
+        from pathlib import Path
+        self.backup_dir = Path(get_data_path()) / "backups"
         ensure_dir(self.backup_dir)
+    
+    def _validate_backup(self, data: dict) -> bool:
+        """验证备份数据结构"""
+        if "version" not in data:
+            return False
+        if "created_at" not in data:
+            return False
+        if "data" not in data:
+            return False
+        required_keys = ["tasks", "pomodoro_sessions", "daily_stats", "settings", "achievements", "task_templates"]
+        for key in required_keys:
+            if key not in data["data"]:
+                return False
+        return True
 
     def create_backup(self, backup_path: Optional[str] = None) -> str:
         if not backup_path:
@@ -118,6 +133,10 @@ class BackupManager:
         try:
             with open(backup_path, "r", encoding="utf-8") as f:
                 backup_data = json.load(f)
+            
+            if not self._validate_backup(backup_data):
+                logger.error("备份文件格式无效")
+                return False
 
             with self.db_manager.session() as session:
                 session.query(PomodoroSession).delete()

@@ -14,8 +14,10 @@ def validate_task_name(name):
     return True, None
 
 
+from models import SubjectEnum
+
 def validate_subject(subject):
-    valid_subjects = ['政治', '英语', '数学', '专业课', '其他']
+    valid_subjects = [e.value for e in SubjectEnum]
     if subject not in valid_subjects:
         return False, f"科目必须是以下之一：{', '.join(valid_subjects)}"
     return True, None

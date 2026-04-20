@@ -12,9 +12,7 @@ class DailyStat(Base):
     daily_goal = Column(Integer, default=8, comment="每日番茄目标")
     goal_achieved = Column(Boolean, default=False, comment="是否达成目标")
 
-    __table_args__ = (
-        Index("idx_date", "date"),
-    )
+
 
     def __repr__(self):
         return f"<DailyStat(date={self.date}, total_pomodoros={self.total_pomodoros})>"

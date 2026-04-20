@@ -251,7 +251,7 @@ class MainWindow(QMainWindow):
         tray_menu.addAction(show_action)
 
         start_action = QAction("开始/暂停", self)
-        start_action.triggered.connect(lambda: self.timer.start() if not self.timer.is_running() else self.timer.pause)
+        start_action.triggered.connect(lambda: self.timer.start() if not self.timer.is_running() else self.timer.pause())
         tray_menu.addAction(start_action)
 
         quit_action = QAction("退出", self)

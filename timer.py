@@ -220,7 +220,8 @@ class PomodoroTimer(QObject):
                 duration = int((datetime.now() - self.session_start_time).total_seconds())
                 stat.total_focus_time += duration
 
-            daily_goal = int(session.query(Setting).filter_by(key="daily_goal").first().value)
+            goal_setting = session.query(Setting).filter_by(key="daily_goal").first()
+            daily_goal = int(goal_setting.value) if goal_setting else 8
             if stat.total_pomodoros >= daily_goal and not stat.goal_achieved:
                 stat.goal_achieved = True
 

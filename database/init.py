@@ -19,6 +19,7 @@ def init_database():
     
     # 先连接到MySQL服务器创建数据库
     import mysql.connector
+    conn = None
     try:
         conn = mysql.connector.connect(
             host=config.get('DB_HOST'),
@@ -36,10 +37,12 @@ def init_database():
         # 直接使用反引号包裹数据库名，因为已经通过正则验证
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
         cursor.close()
-        conn.close()
         logger.info(f"数据库 {db_name} 创建成功")
     except Exception as e:
         logger.warning(f"创建数据库失败: {e}")
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
     
     # 现在连接到具体数据库
     db_manager = get_db_manager()
@@ -197,9 +200,10 @@ def init_today_stat(session):
 
 def test_connection():
     try:
+        from sqlalchemy import text
         db_manager = get_db_manager()
         with db_manager.session() as session:
-            session.execute("SELECT 1")
+            session.execute(text("SELECT 1"))
         logger.info("数据库连接测试成功！")
         return True
     except Exception as e:

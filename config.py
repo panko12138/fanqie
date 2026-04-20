@@ -5,15 +5,19 @@ from typing import Dict, Optional, Any
 from dotenv import load_dotenv
 
 
+import threading
+
 class Config:
     """配置管理类，使用单例模式"""
     
     _instance: Optional['Config'] = None
     _initialized: bool = False
+    _lock = threading.Lock()
     
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
         return cls._instance
     
     def __init__(self, env_file: Optional[str] = None):

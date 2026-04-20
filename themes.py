@@ -51,10 +51,19 @@ class Colors:
 
 
 class ThemeManager(QObject):
+    _instance = None
     theme_changed = pyqtSignal(ThemeType)
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
         super().__init__()
+        if hasattr(self, '_initialized') and self._initialized:
+            return
+        self._initialized = True
         self.current_theme = ThemeType.LIGHT
         self._load_settings()
 
@@ -67,9 +76,9 @@ class ThemeManager(QObject):
                 setting = session.query(Setting).filter_by(key="theme").first()
                 if setting:
                     if setting.value == "auto":
-                        setting.value = "light"
-                        session.commit()
-                    self.current_theme = ThemeType(setting.value)
+                        self.current_theme = ThemeType.LIGHT
+                    else:
+                        self.current_theme = ThemeType(setting.value)
         except Exception as e:
             logger.warning(f"加载主题设置失败: {e}")
 

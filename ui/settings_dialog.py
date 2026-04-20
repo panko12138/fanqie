@@ -337,7 +337,6 @@ class SettingsDialog(QDialog):
                     else:
                         setting = Setting(key=key, value=value)
                         session.add(setting)
-                session.commit()
 
             self.theme_manager.set_theme(self.theme_combo.currentData())
             logger.info("设置保存成功")
