@@ -105,7 +105,7 @@ class StatsPanel(QWidget):
         self.today_goal_card = StatCard("每日目标", "未达成")
         today_grid.addWidget(self.today_goal_card, 0, 3)
 
-        today_section.layout().addLayout(today_grid)
+        today_section.layout.addLayout(today_grid)
         content_layout.addWidget(today_section)
 
         total_section = self._create_section("总体统计")
@@ -124,13 +124,13 @@ class StatsPanel(QWidget):
         self.consecutive_days_card = StatCard("连续打卡", "0天")
         total_grid.addWidget(self.consecutive_days_card, 0, 3)
 
-        total_section.layout().addLayout(total_grid)
+        total_section.layout.addLayout(total_grid)
         content_layout.addWidget(total_section)
 
         achievements_section = self._create_section("成就")
         self.achievements_layout = QHBoxLayout()
         self.achievements_layout.setSpacing(16)
-        achievements_section.layout().addLayout(self.achievements_layout)
+        achievements_section.layout.addLayout(self.achievements_layout)
         content_layout.addWidget(achievements_section)
 
         content_layout.addStretch()
@@ -140,7 +140,8 @@ class StatsPanel(QWidget):
 
     def _create_section(self, title: str) -> StyledCard:
         card = StyledCard()
-        layout = QVBoxLayout(card)
+        # 使用 StyledCard 已经创建好的布局
+        layout = card.layout
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(20)
 

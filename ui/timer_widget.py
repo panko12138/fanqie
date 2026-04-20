@@ -45,7 +45,8 @@ class TimerWidget(QWidget):
         layout.setSpacing(24)
 
         card = StyledCard()
-        card_layout = QVBoxLayout(card)
+        # 使用 StyledCard 已经创建好的布局
+        card_layout = card.layout
         card_layout.setContentsMargins(32, 32, 32, 32)
         card_layout.setSpacing(20)
 

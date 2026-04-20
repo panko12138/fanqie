@@ -236,6 +236,12 @@ class MainWindow(QMainWindow):
 
     def init_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
+        # 创建一个简单的图标作为系统托盘图标
+        # 尝试使用 Qt 内置的标准图标
+        from PyQt5.QtGui import QIcon
+        from PyQt5.QtWidgets import QStyle
+        icon = self.style().standardIcon(QStyle.SP_MessageBoxInformation)
+        self.tray_icon.setIcon(icon)
         self.tray_icon.setToolTip("考研番茄钟")
 
         tray_menu = QMenu()

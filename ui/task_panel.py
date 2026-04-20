@@ -204,7 +204,8 @@ class TaskPanel(QWidget):
         layout.setSpacing(16)
 
         toolbar = StyledCard()
-        toolbar_layout = QHBoxLayout(toolbar)
+        # 使用 StyledCard 已经创建好的布局
+        toolbar_layout = toolbar.layout
         toolbar_layout.setContentsMargins(16, 12, 16, 12)
 
         add_btn = PrimaryButton("+ 新建任务")
