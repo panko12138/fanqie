@@ -1,59 +1,84 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QScrollArea,
-    QFrame, QTabWidget
+    QFrame
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from statistics import StatisticsManager
+from themes import ThemeManager
+from ui.components import StyledCard
 from utils.logger import get_logger
 from utils.helpers import format_duration
 
 logger = get_logger(__name__)
 
 
-class StatCard(QWidget):
+class StatCard(QFrame):
     def __init__(self, title: str, value: str, subtitle: str = "", parent=None):
         super().__init__(parent)
+        self.theme_manager = ThemeManager()
         self.value_label = None
         self.init_ui(title, value, subtitle)
+        self.theme_manager.theme_changed.connect(self._update_styles)
+
+    def _update_styles(self):
+        colors = self.theme_manager.get_colors()
+        if self.title_label:
+            self.title_label.setStyleSheet(f"color: {colors['text_secondary']}; font-size: 13px;")
+        if self.value_label:
+            self.value_label.setStyleSheet(f"color: {colors['text']};")
+        if self.subtitle_label:
+            self.subtitle_label.setStyleSheet(f"color: {colors['text_muted']}; font-size: 12px;")
 
     def init_ui(self, title: str, value: str, subtitle: str):
+        colors = self.theme_manager.get_colors()
+        
+        self.setFrameShape(QFrame.StyledPanel)
+        self.setStyleSheet(f"""
+            StatCard {{
+                background-color: {colors['card_background']};
+                border: 1px solid {colors['border']};
+                border-radius: 12px;
+            }}
+        """)
+        
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(15, 15, 15, 15)
-        layout.setSpacing(5)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(8)
 
-        title_label = QLabel(title)
-        title_label.setStyleSheet("color: #666666; font-size: 12px;")
-        layout.addWidget(title_label)
+        self.title_label = QLabel(title)
+        layout.addWidget(self.title_label)
 
         self.value_label = QLabel(value)
         value_font = QFont()
-        value_font.setPointSize(24)
+        value_font.setPointSize(26)
         value_font.setBold(True)
         self.value_label.setFont(value_font)
-        self.value_label.setStyleSheet("color: #333333;")
         layout.addWidget(self.value_label)
 
+        self.subtitle_label = None
         if subtitle:
-            subtitle_label = QLabel(subtitle)
-            subtitle_label.setStyleSheet("color: #888888; font-size: 11px;")
-            layout.addWidget(subtitle_label)
+            self.subtitle_label = QLabel(subtitle)
+            layout.addWidget(self.subtitle_label)
 
-        self.setStyleSheet("background-color: white; border-radius: 8px;")
-        self.setMinimumHeight(120)
+        self.setMinimumHeight(130)
+        self._update_styles()
 
 
 class StatsPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.stats_manager = StatisticsManager()
+        self.theme_manager = ThemeManager()
         self.init_ui()
         self.load_stats()
 
     def init_ui(self):
+        colors = self.theme_manager.get_colors()
+        
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(10, 10, 10, 10)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(20)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -61,16 +86,13 @@ class StatsPanel(QWidget):
 
         content_widget = QWidget()
         content_layout = QVBoxLayout(content_widget)
-        content_layout.setSpacing(20)
+        content_layout.setSpacing(24)
+        content_layout.setContentsMargins(0, 0, 0, 0)
 
-        today_title = QLabel("今日统计")
-        today_title.setFont(QFont("Arial", 16, QFont.Bold))
-        content_layout.addWidget(today_title)
-
+        today_section = self._create_section("今日统计")
         today_grid = QGridLayout()
-        today_grid.setSpacing(10)
-        content_layout.addLayout(today_grid)
-
+        today_grid.setSpacing(16)
+        
         self.today_pomodoros_card = StatCard("完成番茄", "0")
         today_grid.addWidget(self.today_pomodoros_card, 0, 0)
 
@@ -83,13 +105,12 @@ class StatsPanel(QWidget):
         self.today_goal_card = StatCard("每日目标", "未达成")
         today_grid.addWidget(self.today_goal_card, 0, 3)
 
-        total_title = QLabel("总体统计")
-        total_title.setFont(QFont("Arial", 16, QFont.Bold))
-        content_layout.addWidget(total_title)
+        today_section.layout().addLayout(today_grid)
+        content_layout.addWidget(today_section)
 
+        total_section = self._create_section("总体统计")
         total_grid = QGridLayout()
-        total_grid.setSpacing(10)
-        content_layout.addLayout(total_grid)
+        total_grid.setSpacing(16)
 
         self.total_pomodoros_card = StatCard("总番茄数", "0")
         total_grid.addWidget(self.total_pomodoros_card, 0, 0)
@@ -103,17 +124,31 @@ class StatsPanel(QWidget):
         self.consecutive_days_card = StatCard("连续打卡", "0天")
         total_grid.addWidget(self.consecutive_days_card, 0, 3)
 
-        achievements_title = QLabel("成就")
-        achievements_title.setFont(QFont("Arial", 16, QFont.Bold))
-        content_layout.addWidget(achievements_title)
+        total_section.layout().addLayout(total_grid)
+        content_layout.addWidget(total_section)
 
+        achievements_section = self._create_section("成就")
         self.achievements_layout = QHBoxLayout()
-        content_layout.addLayout(self.achievements_layout)
+        self.achievements_layout.setSpacing(16)
+        achievements_section.layout().addLayout(self.achievements_layout)
+        content_layout.addWidget(achievements_section)
 
         content_layout.addStretch()
 
         scroll.setWidget(content_widget)
         main_layout.addWidget(scroll)
+
+    def _create_section(self, title: str) -> StyledCard:
+        card = StyledCard()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(20)
+
+        title_label = QLabel(title)
+        title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
+        layout.addWidget(title_label)
+
+        return card
 
     def load_stats(self):
         today_stats = self.stats_manager.get_today_stats()
@@ -125,7 +160,8 @@ class StatsPanel(QWidget):
         goal_text = "已达成!" if today_stats["goal_achieved"] else f"目标: {today_stats['daily_goal']}"
         self.today_goal_card.value_label.setText(goal_text)
         if today_stats["goal_achieved"]:
-            self.today_goal_card.value_label.setStyleSheet("color: #2ECC71;")
+            colors = self.theme_manager.get_colors()
+            self.today_goal_card.value_label.setStyleSheet(f"color: {colors['success']}; font-size: 26px; font-weight: bold;")
 
         self.total_pomodoros_card.value_label.setText(str(total_stats["total_pomodoros"]))
         self.total_focus_card.value_label.setText(format_duration(total_stats["total_focus_time"], True))
@@ -139,6 +175,7 @@ class StatsPanel(QWidget):
             self.achievements_layout.itemAt(i).widget().setParent(None)
 
         achievements = self.stats_manager.get_achievements()
+        colors = self.theme_manager.get_colors()
         for achievement in achievements:
             card = StatCard(
                 achievement["icon"] + " " + achievement["name"],
@@ -146,9 +183,9 @@ class StatsPanel(QWidget):
                 achievement["description"]
             )
             if achievement["unlocked"]:
-                card.value_label.setStyleSheet("color: #2ECC71;")
+                card.value_label.setStyleSheet(f"color: {colors['success']}; font-size: 26px; font-weight: bold;")
             else:
-                card.value_label.setStyleSheet("color: #888888;")
+                card.value_label.setStyleSheet(f"color: {colors['text_muted']}; font-size: 26px; font-weight: bold;")
             self.achievements_layout.addWidget(card)
 
     def refresh(self):

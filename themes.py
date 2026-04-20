@@ -12,6 +12,44 @@ class ThemeType(Enum):
     DARK = "dark"
 
 
+class Colors:
+    DARK = {
+        "background": "#0F172A",
+        "card_background": "#1E293B",
+        "border": "#334155",
+        "text": "#F8FAFC",
+        "text_secondary": "#94A3B8",
+        "text_muted": "#64748B",
+        "focus": "#F97316",
+        "short_break": "#22C55E",
+        "long_break": "#3B82F6",
+        "danger": "#EF4444",
+        "success": "#10B981",
+        "info": "#06B6D4",
+        "shadow_light": "rgba(0,0,0,0.05)",
+        "shadow_medium": "rgba(0,0,0,0.1)",
+        "shadow_heavy": "rgba(0,0,0,0.15)"
+    }
+    
+    LIGHT = {
+        "background": "#F8FAFC",
+        "card_background": "#FFFFFF",
+        "border": "#E2E8F0",
+        "text": "#1E293B",
+        "text_secondary": "#64748B",
+        "text_muted": "#94A3B8",
+        "focus": "#F97316",
+        "short_break": "#22C55E",
+        "long_break": "#3B82F6",
+        "danger": "#EF4444",
+        "success": "#10B981",
+        "info": "#06B6D4",
+        "shadow_light": "rgba(0,0,0,0.05)",
+        "shadow_medium": "rgba(0,0,0,0.1)",
+        "shadow_heavy": "rgba(0,0,0,0.1)"
+    }
+
+
 class ThemeManager(QObject):
     theme_changed = pyqtSignal(ThemeType)
 
@@ -47,36 +85,22 @@ class ThemeManager(QObject):
         if not app:
             return
 
+        colors = self.get_colors()
         palette = QPalette()
-
-        if self.current_theme == ThemeType.DARK:
-            palette.setColor(QPalette.Window, QColor(26, 26, 46))
-            palette.setColor(QPalette.WindowText, QColor(232, 232, 232))
-            palette.setColor(QPalette.Base, QColor(22, 33, 62))
-            palette.setColor(QPalette.AlternateBase, QColor(26, 26, 46))
-            palette.setColor(QPalette.ToolTipBase, QColor(26, 26, 46))
-            palette.setColor(QPalette.ToolTipText, QColor(232, 232, 232))
-            palette.setColor(QPalette.Text, QColor(232, 232, 232))
-            palette.setColor(QPalette.Button, QColor(22, 33, 62))
-            palette.setColor(QPalette.ButtonText, QColor(232, 232, 232))
-            palette.setColor(QPalette.BrightText, QColor(231, 76, 60))
-            palette.setColor(QPalette.Link, QColor(52, 152, 219))
-            palette.setColor(QPalette.Highlight, QColor(52, 152, 219))
-            palette.setColor(QPalette.HighlightedText, QColor(232, 232, 232))
-        else:
-            palette.setColor(QPalette.Window, QColor(250, 250, 250))
-            palette.setColor(QPalette.WindowText, QColor(0, 0, 0))
-            palette.setColor(QPalette.Base, QColor(255, 255, 255))
-            palette.setColor(QPalette.AlternateBase, QColor(245, 245, 245))
-            palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 220))
-            palette.setColor(QPalette.ToolTipText, QColor(0, 0, 0))
-            palette.setColor(QPalette.Text, QColor(0, 0, 0))
-            palette.setColor(QPalette.Button, QColor(240, 240, 240))
-            palette.setColor(QPalette.ButtonText, QColor(0, 0, 0))
-            palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
-            palette.setColor(QPalette.Link, QColor(0, 0, 255))
-            palette.setColor(QPalette.Highlight, QColor(46, 204, 113))
-            palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
+        
+        palette.setColor(QPalette.Window, QColor(colors["background"]))
+        palette.setColor(QPalette.WindowText, QColor(colors["text"]))
+        palette.setColor(QPalette.Base, QColor(colors["card_background"]))
+        palette.setColor(QPalette.AlternateBase, QColor(colors["background"]))
+        palette.setColor(QPalette.ToolTipBase, QColor(colors["card_background"]))
+        palette.setColor(QPalette.ToolTipText, QColor(colors["text"]))
+        palette.setColor(QPalette.Text, QColor(colors["text"]))
+        palette.setColor(QPalette.Button, QColor(colors["card_background"]))
+        palette.setColor(QPalette.ButtonText, QColor(colors["text"]))
+        palette.setColor(QPalette.BrightText, QColor(colors["danger"]))
+        palette.setColor(QPalette.Link, QColor(colors["info"]))
+        palette.setColor(QPalette.Highlight, QColor(colors["focus"]))
+        palette.setColor(QPalette.HighlightedText, QColor("#FFFFFF"))
 
         app.setPalette(palette)
 
@@ -101,24 +125,251 @@ class ThemeManager(QObject):
     def is_dark_theme(self) -> bool:
         return self.current_theme == ThemeType.DARK
 
+    def get_colors(self) -> dict:
+        return Colors.DARK if self.is_dark_theme() else Colors.LIGHT
+
     def get_state_colors(self) -> dict:
-        if self.current_theme == ThemeType.DARK:
-            return {
-                "focus": "#E74C3C",
-                "short_break": "#2ECC71",
-                "long_break": "#3498DB",
-                "background": "#1A1A2E",
-                "card_background": "#16213E",
-                "text": "#E8E8E8",
-                "text_secondary": "#A0A0A0",
-            }
-        else:
-            return {
-                "focus": "#E74C3C",
-                "short_break": "#2ECC71",
-                "long_break": "#3498DB",
-                "background": "#FAFAFA",
-                "card_background": "#FFFFFF",
-                "text": "#000000",
-                "text_secondary": "#666666",
-            }
+        colors = self.get_colors()
+        return {
+            "focus": colors["focus"],
+            "short_break": colors["short_break"],
+            "long_break": colors["long_break"],
+            "background": colors["background"],
+            "card_background": colors["card_background"],
+            "text": colors["text"],
+            "text_secondary": colors["text_secondary"],
+            "text_muted": colors["text_muted"],
+            "border": colors["border"],
+            "danger": colors["danger"],
+            "success": colors["success"]
+        }
+
+    def get_stylesheet(self) -> str:
+        colors = self.get_colors()
+        
+        return f"""
+        QWidget {{
+            background-color: {colors["background"]};
+            color: {colors["text"]};
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+        }}
+        
+        QPushButton {{
+            background-color: {colors["card_background"]};
+            color: {colors["text"]};
+            border: 1px solid {colors["border"]};
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+        }}
+        
+        QPushButton:hover {{
+            background-color: {colors["border"]};
+            border: 1px solid {colors["text_secondary"]};
+        }}
+        
+        QPushButton:pressed {{
+            background-color: {colors["border"]};
+        }}
+        
+        QPushButton:checked {{
+            background-color: {colors["focus"]};
+            color: #FFFFFF;
+            border: 1px solid {colors["focus"]};
+        }}
+        
+        QLineEdit, QTextEdit, QPlainTextEdit {{
+            background-color: {colors["card_background"]};
+            color: {colors["text"]};
+            border: 1px solid {colors["border"]};
+            border-radius: 6px;
+            padding: 8px;
+            selection-background-color: {colors["focus"]};
+        }}
+        
+        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{
+            border: 2px solid {colors["focus"]};
+        }}
+        
+        QComboBox {{
+            background-color: {colors["card_background"]};
+            color: {colors["text"]};
+            border: 1px solid {colors["border"]};
+            border-radius: 6px;
+            padding: 6px 12px;
+        }}
+        
+        QComboBox:hover {{
+            border: 1px solid {colors["text_secondary"]};
+        }}
+        
+        QComboBox::drop-down {{
+            border: none;
+            width: 20px;
+        }}
+        
+        QComboBox::down-arrow {{
+            image: none;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid {colors["text_secondary"]};
+            margin-right: 8px;
+        }}
+        
+        QComboBox QAbstractItemView {{
+            background-color: {colors["card_background"]};
+            color: {colors["text"]};
+            border: 1px solid {colors["border"]};
+            selection-background-color: {colors["focus"]};
+            selection-color: #FFFFFF;
+            padding: 4px;
+        }}
+        
+        QTabWidget::pane {{
+            border: none;
+            background-color: {colors["background"]};
+        }}
+        
+        QTabBar::tab {{
+            background-color: {colors["background"]};
+            color: {colors["text_secondary"]};
+            padding: 10px 20px;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-right: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }}
+        
+        QTabBar::tab:selected {{
+            color: {colors["text"]};
+            border-bottom: 2px solid {colors["focus"]};
+        }}
+        
+        QTabBar::tab:hover:!selected {{
+            color: {colors["text"]};
+            background-color: {colors["card_background"]};
+        }}
+        
+        QScrollArea {{
+            border: none;
+            background-color: transparent;
+        }}
+        
+        QScrollBar:vertical {{
+            background-color: transparent;
+            width: 8px;
+            border-radius: 4px;
+            margin: 0px;
+        }}
+        
+        QScrollBar::handle:vertical {{
+            background-color: {colors["border"]};
+            border-radius: 4px;
+            min-height: 30px;
+        }}
+        
+        QScrollBar::handle:vertical:hover {{
+            background-color: {colors["text_secondary"]};
+        }}
+        
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+            height: 0px;
+        }}
+        
+        QScrollBar:horizontal {{
+            background-color: transparent;
+            height: 8px;
+            border-radius: 4px;
+            margin: 0px;
+        }}
+        
+        QScrollBar::handle:horizontal {{
+            background-color: {colors["border"]};
+            border-radius: 4px;
+            min-width: 30px;
+        }}
+        
+        QScrollBar::handle:horizontal:hover {{
+            background-color: {colors["text_secondary"]};
+        }}
+        
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+            width: 0px;
+        }}
+        
+        QSpinBox {{
+            background-color: {colors["card_background"]};
+            color: {colors["text"]};
+            border: 1px solid {colors["border"]};
+            border-radius: 6px;
+            padding: 6px;
+        }}
+        
+        QSpinBox:focus {{
+            border: 2px solid {colors["focus"]};
+        }}
+        
+        QSpinBox::up-button, QSpinBox::down-button {{
+            border: none;
+            background-color: transparent;
+            width: 20px;
+        }}
+        
+        QSpinBox::up-arrow {{
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid {colors["text_secondary"]};
+        }}
+        
+        QSpinBox::down-arrow {{
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid {colors["text_secondary"]};
+        }}
+        
+        QCheckBox {{
+            color: {colors["text"]};
+            spacing: 8px;
+        }}
+        
+        QCheckBox::indicator {{
+            width: 18px;
+            height: 18px;
+            border: 2px solid {colors["border"]};
+            border-radius: 4px;
+            background-color: {colors["card_background"]};
+        }}
+        
+        QCheckBox::indicator:hover {{
+            border-color: {colors["text_secondary"]};
+        }}
+        
+        QCheckBox::indicator:checked {{
+            background-color: {colors["focus"]};
+            border-color: {colors["focus"]};
+        }}
+        
+        QListWidget {{
+            background-color: {colors["background"]};
+            border: none;
+            outline: none;
+        }}
+        
+        QListWidget::item {{
+            background-color: transparent;
+            padding: 4px;
+            border-radius: 6px;
+            margin: 2px 0px;
+        }}
+        
+        QListWidget::item:hover {{
+            background-color: {colors["card_background"]};
+        }}
+        
+        QListWidget::item:selected {{
+            background-color: {colors["focus"]};
+            color: #FFFFFF;
+        }}
+        """

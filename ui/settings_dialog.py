@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSpinBox,
     QComboBox, QCheckBox, QTabWidget, QWidget, QFormLayout, QFileDialog,
-    QMessageBox, QListWidget, QListWidgetItem
+    QMessageBox, QListWidget, QListWidgetItem, QFrame
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
@@ -9,6 +9,10 @@ from database import get_db_manager
 from models import Setting
 from themes import ThemeManager, ThemeType
 from backup import BackupManager
+from ui.components import (
+    StyledButton, PrimaryButton, DangerButton,
+    StyledComboBox, StyledCard
+)
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -23,113 +27,263 @@ class SettingsDialog(QDialog):
         self.init_ui()
         self.load_settings()
         self.setWindowTitle("设置")
-        self.resize(500, 600)
+        self.resize(520, 620)
 
     def init_ui(self):
+        colors = self.theme_manager.get_colors()
+        
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(20)
 
         self.tab_widget = QTabWidget()
+        self.tab_widget.setStyleSheet(f"""
+            QTabWidget::pane {{
+                border: none;
+                background-color: transparent;
+            }}
+            QTabBar::tab {{
+                background-color: transparent;
+                color: {colors['text_secondary']};
+                padding: 12px 24px;
+                border: none;
+                border-bottom: 2px solid transparent;
+                margin-right: 4px;
+                font-size: 14px;
+                font-weight: 500;
+            }}
+            QTabBar::tab:selected {{
+                color: {colors['text']};
+                border-bottom: 2px solid {colors['focus']};
+            }}
+            QTabBar::tab:hover:!selected {{
+                color: {colors['text']};
+                background-color: {colors['card_background']};
+            }}
+        """)
 
-        timer_tab = self.create_timer_tab()
+        timer_tab = self._create_timer_tab()
         self.tab_widget.addTab(timer_tab, "计时器")
 
-        appearance_tab = self.create_appearance_tab()
+        appearance_tab = self._create_appearance_tab()
         self.tab_widget.addTab(appearance_tab, "外观")
 
-        notification_tab = self.create_notification_tab()
+        notification_tab = self._create_notification_tab()
         self.tab_widget.addTab(notification_tab, "通知")
 
-        backup_tab = self.create_backup_tab()
+        backup_tab = self._create_backup_tab()
         self.tab_widget.addTab(backup_tab, "备份")
 
         layout.addWidget(self.tab_widget)
 
         button_layout = QHBoxLayout()
-        ok_btn = QPushButton("确定")
-        ok_btn.clicked.connect(self.save_and_close)
-        cancel_btn = QPushButton("取消")
-        cancel_btn.clicked.connect(self.reject)
+        button_layout.setSpacing(12)
         button_layout.addStretch()
-        button_layout.addWidget(ok_btn)
+        
+        cancel_btn = StyledButton("取消")
+        cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(cancel_btn)
+        
+        ok_btn = PrimaryButton("确定")
+        ok_btn.clicked.connect(self.save_and_close)
+        button_layout.addWidget(ok_btn)
+        
         layout.addLayout(button_layout)
 
-    def create_timer_tab(self) -> QWidget:
+    def _create_timer_tab(self) -> QWidget:
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setSpacing(16)
+        layout.setContentsMargins(0, 8, 0, 8)
 
+        from PyQt5.QtWidgets import QSpinBox
         self.focus_spin = QSpinBox()
         self.focus_spin.setRange(1, 60)
         self.focus_spin.setValue(25)
         self.focus_spin.setSuffix(" 分钟")
+        self._style_spinbox(self.focus_spin)
         layout.addRow("专注时长:", self.focus_spin)
 
         self.short_break_spin = QSpinBox()
         self.short_break_spin.setRange(1, 15)
         self.short_break_spin.setValue(5)
         self.short_break_spin.setSuffix(" 分钟")
+        self._style_spinbox(self.short_break_spin)
         layout.addRow("短休息时长:", self.short_break_spin)
 
         self.long_break_spin = QSpinBox()
         self.long_break_spin.setRange(1, 30)
         self.long_break_spin.setValue(15)
         self.long_break_spin.setSuffix(" 分钟")
+        self._style_spinbox(self.long_break_spin)
         layout.addRow("长休息时长:", self.long_break_spin)
 
         self.interval_spin = QSpinBox()
         self.interval_spin.setRange(2, 8)
         self.interval_spin.setValue(4)
+        self._style_spinbox(self.interval_spin)
         layout.addRow("长休息间隔（番茄数）:", self.interval_spin)
 
         self.daily_goal_spin = QSpinBox()
         self.daily_goal_spin.setRange(1, 20)
         self.daily_goal_spin.setValue(8)
+        self._style_spinbox(self.daily_goal_spin)
         layout.addRow("每日番茄目标:", self.daily_goal_spin)
 
         return widget
 
-    def create_appearance_tab(self) -> QWidget:
+    def _style_spinbox(self, spinbox):
+        colors = self.theme_manager.get_colors()
+        spinbox.setStyleSheet(f"""
+            QSpinBox {{
+                background-color: {colors['card_background']};
+                color: {colors['text']};
+                border: 2px solid {colors['border']};
+                border-radius: 8px;
+                padding: 10px 14px;
+                font-size: 14px;
+            }}
+            QSpinBox:focus {{
+                border: 2px solid {colors['focus']};
+            }}
+            QSpinBox::up-button, QSpinBox::down-button {{
+                border: none;
+                background-color: transparent;
+                width: 24px;
+            }}
+            QSpinBox::up-arrow {{
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-bottom: 6px solid {colors['text_secondary']};
+            }}
+            QSpinBox::down-arrow {{
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-top: 6px solid {colors['text_secondary']};
+            }}
+        """)
+
+    def _create_appearance_tab(self) -> QWidget:
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setSpacing(16)
+        layout.setContentsMargins(0, 8, 0, 8)
 
-        self.theme_combo = QComboBox()
+        self.theme_combo = StyledComboBox()
         self.theme_combo.addItem("浅色", ThemeType.LIGHT)
         self.theme_combo.addItem("深色", ThemeType.DARK)
         layout.addRow("主题:", self.theme_combo)
 
         return widget
 
-    def create_notification_tab(self) -> QWidget:
+    def _create_notification_tab(self) -> QWidget:
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setSpacing(16)
+        layout.setContentsMargins(0, 8, 0, 8)
 
+        colors = self.theme_manager.get_colors()
         self.sound_check = QCheckBox("启用提示音")
+        self.sound_check.setStyleSheet(f"""
+            QCheckBox {{
+                color: {colors['text']};
+                spacing: 10px;
+                font-size: 14px;
+            }}
+            QCheckBox::indicator {{
+                width: 20px;
+                height: 20px;
+                border: 2px solid {colors['border']};
+                border-radius: 4px;
+                background-color: {colors['card_background']};
+            }}
+            QCheckBox::indicator:hover {{
+                border-color: {colors['text_secondary']};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {colors['focus']};
+                border-color: {colors['focus']};
+            }}
+        """)
         layout.addRow(self.sound_check)
 
         self.notification_check = QCheckBox("启用系统通知")
+        self.notification_check.setStyleSheet(f"""
+            QCheckBox {{
+                color: {colors['text']};
+                spacing: 10px;
+                font-size: 14px;
+            }}
+            QCheckBox::indicator {{
+                width: 20px;
+                height: 20px;
+                border: 2px solid {colors['border']};
+                border-radius: 4px;
+                background-color: {colors['card_background']};
+            }}
+            QCheckBox::indicator:hover {{
+                border-color: {colors['text_secondary']};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {colors['focus']};
+                border-color: {colors['focus']};
+            }}
+        """)
         layout.addRow(self.notification_check)
 
         return widget
 
-    def create_backup_tab(self) -> QWidget:
+    def _create_backup_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setSpacing(16)
+        layout.setContentsMargins(0, 8, 0, 8)
 
         btn_layout = QHBoxLayout()
-        create_backup_btn = QPushButton("创建备份")
+        btn_layout.setSpacing(12)
+        
+        create_backup_btn = PrimaryButton("创建备份")
         create_backup_btn.clicked.connect(self.create_backup)
-        restore_backup_btn = QPushButton("恢复备份")
-        restore_backup_btn.clicked.connect(self.restore_backup)
         btn_layout.addWidget(create_backup_btn)
+        
+        restore_backup_btn = StyledButton("恢复备份")
+        restore_backup_btn.clicked.connect(self.restore_backup)
         btn_layout.addWidget(restore_backup_btn)
+        
         layout.addLayout(btn_layout)
 
-        layout.addWidget(QLabel("备份列表:"))
+        backup_label = QLabel("备份列表:")
+        backup_label.setStyleSheet(f"color: {self.theme_manager.get_colors()['text']}; font-size: 14px; font-weight: 500;")
+        layout.addWidget(backup_label)
 
         self.backup_list = QListWidget()
+        self.backup_list.setSpacing(6)
+        self.backup_list.setFrameShape(QFrame.StyledPanel)
+        self.backup_list.setStyleSheet(f"""
+            QListWidget {{
+                background-color: {self.theme_manager.get_colors()['card_background']};
+                color: {self.theme_manager.get_colors()['text']};
+                border: 1px solid {self.theme_manager.get_colors()['border']};
+                border-radius: 8px;
+                padding: 8px;
+            }}
+            QListWidget::item {{
+                background-color: transparent;
+                padding: 8px 12px;
+                border-radius: 6px;
+                margin: 2px 0px;
+            }}
+            QListWidget::item:hover {{
+                background-color: {self.theme_manager.get_colors()['border']};
+            }}
+            QListWidget::item:selected {{
+                background-color: {self.theme_manager.get_colors()['focus']};
+                color: white;
+            }}
+        """)
         layout.addWidget(self.backup_list)
 
-        delete_backup_btn = QPushButton("删除选中备份")
+        delete_backup_btn = DangerButton("删除选中备份")
         delete_backup_btn.clicked.connect(self.delete_backup)
         layout.addWidget(delete_backup_btn)
 
@@ -243,5 +397,5 @@ class SettingsDialog(QDialog):
         backups = self.backup_manager.list_backups()
         for backup in backups:
             item = QListWidgetItem(f"{backup['filename']} - {backup['created_at'].strftime('%Y-%m-%d %H:%M')}")
-            item.setData(Qt.UserRole, backup["path"])
+            item.setData(Qt.UserRole, backup['path'])
             self.backup_list.addItem(item)
