@@ -20,7 +20,7 @@ class PomodoroTimer(QObject):
     state_changed = pyqtSignal(TimerState)
     pomodoro_completed = pyqtSignal(int)
     break_started = pyqtSignal(TimerState)
-    session_saved = pyqtSignal(int)
+    session_saved = pyqtSignal(int)  # 参数为会话ID
     progress_updated = pyqtSignal(float)  # 新增进度更新信号
     is_running_changed = pyqtSignal(bool)  # 运行状态变化信号
     achievement_unlocked = pyqtSignal(list)  # 成就解锁信号
