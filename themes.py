@@ -14,25 +14,39 @@ class ThemeType(Enum):
 
 class Colors:
     DARK: dict[str, str] = {
-        "background": "#121212",
-        "card_background": "#1E1E1E",
-        "border": "#333333",
-        "text": "#FFFFFF",
-        "text_secondary": "#B0B0B0",
-        "text_muted": "#808080",
-        "accent": "#3498DB",
-        "shadow": "rgba(0,0,0,0.1)"
+        "background": "#0F172A",
+        "card_background": "#1E293B",
+        "border": "#334155",
+        "text": "#F8FAFC",
+        "text_secondary": "#94A3B8",
+        "text_muted": "#64748B",
+        "focus": "#F97316",
+        "short_break": "#22C55E",
+        "long_break": "#3B82F6",
+        "danger": "#EF4444",
+        "success": "#10B981",
+        "info": "#06B6D4",
+        "shadow_light": "rgba(0,0,0,0.05)",
+        "shadow_medium": "rgba(0,0,0,0.1)",
+        "shadow_heavy": "rgba(0,0,0,0.15)"
     }
     
     LIGHT: dict[str, str] = {
-        "background": "#FFFFFF",
-        "card_background": "#F8F9FA",
-        "border": "#E9ECEF",
-        "text": "#212529",
-        "text_secondary": "#6C757D",
-        "text_muted": "#ADB5BD",
-        "accent": "#3498DB",
-        "shadow": "rgba(0,0,0,0.05)"
+        "background": "#F8FAFC",
+        "card_background": "#FFFFFF",
+        "border": "#E2E8F0",
+        "text": "#1E293B",
+        "text_secondary": "#64748B",
+        "text_muted": "#94A3B8",
+        "focus": "#F97316",
+        "short_break": "#22C55E",
+        "long_break": "#3B82F6",
+        "danger": "#EF4444",
+        "success": "#10B981",
+        "info": "#06B6D4",
+        "shadow_light": "rgba(0,0,0,0.05)",
+        "shadow_medium": "rgba(0,0,0,0.1)",
+        "shadow_heavy": "rgba(0,0,0,0.1)"
     }
 
 
@@ -126,13 +140,17 @@ class ThemeManager(QObject):
     def get_state_colors(self) -> dict:
         colors = self.get_colors()
         return {
-            "accent": colors["accent"],
+            "focus": colors["focus"],
+            "short_break": colors["short_break"],
+            "long_break": colors["long_break"],
             "background": colors["background"],
             "card_background": colors["card_background"],
             "text": colors["text"],
             "text_secondary": colors["text_secondary"],
             "text_muted": colors["text_muted"],
-            "border": colors["border"]
+            "border": colors["border"],
+            "danger": colors["danger"],
+            "success": colors["success"]
         }
 
     def get_stylesheet(self) -> str:
