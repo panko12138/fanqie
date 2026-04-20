@@ -13,7 +13,7 @@ class ThemeType(Enum):
 
 
 class Colors:
-    DARK = {
+    DARK: dict[str, str] = {
         "background": "#0F172A",
         "card_background": "#1E293B",
         "border": "#334155",
@@ -31,7 +31,7 @@ class Colors:
         "shadow_heavy": "rgba(0,0,0,0.15)"
     }
     
-    LIGHT = {
+    LIGHT: dict[str, str] = {
         "background": "#F8FAFC",
         "card_background": "#FFFFFF",
         "border": "#E2E8F0",
