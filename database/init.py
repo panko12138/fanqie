@@ -33,9 +33,8 @@ def init_database():
         if not re.match(r'^[a-zA-Z0-9_\-]+$', db_name):
             raise ValueError(f"无效的数据库名: {db_name}")
         
-        # 使用 mysql.connector 的安全转义功能
-        escaped_db_name = conn.converter.escape(db_name)
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{escaped_db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+        # 直接使用反引号包裹数据库名，因为已经通过正则验证
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
         cursor.close()
         conn.close()
         logger.info(f"数据库 {db_name} 创建成功")
