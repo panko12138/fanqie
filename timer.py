@@ -183,8 +183,17 @@ class PomodoroTimer(QObject):
 
             db_manager = get_db_manager()
             with db_manager.session() as session:
+                # 检查task_id是否存在
+                valid_task_id = self.current_task_id
+                if valid_task_id:
+                    from models import Task
+                    task_exists = session.query(Task).filter_by(id=valid_task_id).first()
+                    if not task_exists:
+                        valid_task_id = None
+                        logger.warning(f"任务ID {self.current_task_id} 不存在，将task_id设置为None")
+
                 session_record = PomodoroSession(
-                    task_id=self.current_task_id,
+                    task_id=valid_task_id,
                     start_time=self.session_start_time,
                     end_time=end_time,
                     duration=duration,
@@ -193,9 +202,9 @@ class PomodoroTimer(QObject):
                 session.add(session_record)
                 session.flush()
 
-                if completed and self.current_task_id:
+                if completed and valid_task_id:
                     from models import Task
-                    task = session.query(Task).filter_by(id=self.current_task_id).first()
+                    task = session.query(Task).filter_by(id=valid_task_id).first()
                     if task:
                         task.actual_pomodoros += 1
 
