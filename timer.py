@@ -20,7 +20,7 @@ class PomodoroTimer(QObject):
     state_changed = pyqtSignal(TimerState)
     pomodoro_completed = pyqtSignal(int)
     break_started = pyqtSignal(TimerState)
-    session_saved = pyqtSignal(object)
+    session_saved = pyqtSignal(int)
     progress_updated = pyqtSignal(float)  # 新增进度更新信号
     is_running_changed = pyqtSignal(bool)  # 运行状态变化信号
     achievement_unlocked = pyqtSignal(list)  # 成就解锁信号
@@ -201,9 +201,12 @@ class PomodoroTimer(QObject):
 
                 self._update_daily_stat(session, completed)
                 
+                # 获取会话ID并在会话关闭前使用
+                session_id = session_record.id
+                # 发出信号，只传递会话ID
+                self.session_saved.emit(session_id)
+                logger.info(f"番茄会话已保存: {session_id}")
                 # session.commit() 由上下文管理器自动处理
-                self.session_saved.emit(session_record)
-                logger.info(f"番茄会话已保存: {session_record.id}")
         except Exception as e:
             logger.error(f"保存番茄会话失败: {e}")
 

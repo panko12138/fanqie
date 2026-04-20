@@ -194,7 +194,7 @@ class MainWindow(QMainWindow):
             message += f"{ach['icon']} {ach['name']}\n"
         QMessageBox.information(self, "成就解锁", message)
 
-    def on_session_saved(self, session):
+    def on_session_saved(self, session_id):
         self.task_panel.refresh()
 
     def update_today_stat(self):
