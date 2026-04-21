@@ -2,20 +2,20 @@ from datetime import datetime, date
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QStackedWidget, QSystemTrayIcon, QMenu, QAction, QApplication,
-    QFrame, QMessageBox
+    QFrame, QMessageBox, QGraphicsOpacityEffect
 )
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QIcon, QFont
 
 from timer import PomodoroTimer
 from task_manager import TaskManager
 from notification import NotificationManager
-from themes import ThemeManager
+from themes import ThemeManager, Typography
 from ui.timer_widget import TimerWidget
 from ui.task_panel import TaskPanel
 from ui.stats_panel import StatsPanel
 from ui.settings_dialog import SettingsDialog
-from ui.components import IconButton
+from ui.components import IconButton, FadeAnimation
 from models import Setting
 from utils.logger import get_logger
 
@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
 
     def _on_theme_changed(self):
         self.setStyleSheet(self.theme_manager.get_stylesheet())
+        self._update_nav_indicator()
 
     def init_ui(self):
         central_widget = QWidget()
@@ -67,8 +68,8 @@ class MainWindow(QMainWindow):
 
         content_container = QWidget()
         container_layout = QVBoxLayout(content_container)
-        container_layout.setContentsMargins(20, 20, 20, 20)
-        
+        container_layout.setContentsMargins(32, 32, 32, 32)
+
         self.stacked_widget = QStackedWidget()
         self.timer_widget = TimerWidget()
         self.task_panel = TaskPanel()
@@ -83,57 +84,108 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(content_area, 1)
 
-    def create_nav_bar(self) -> QWidget:
-        nav_bar = QWidget()
-        nav_bar.setFixedWidth(80)
-        
-        layout = QVBoxLayout(nav_bar)
-        layout.setContentsMargins(12, 24, 12, 24)
-        layout.setSpacing(12)
+        QTimer.singleShot(0, self._update_nav_indicator)
 
-        self.nav_timer_btn = IconButton("⏱️")
+    def create_nav_bar(self) -> QWidget:
+        colors = self.theme_manager.get_colors()
+
+        nav_bar = QWidget()
+        nav_bar.setFixedWidth(88)
+        nav_bar.setStyleSheet(f"background-color: {colors['surface']};")
+
+        layout = QVBoxLayout(nav_bar)
+        layout.setContentsMargins(8, 24, 8, 24)
+        layout.setSpacing(8)
+        layout.setAlignment(Qt.AlignHCenter)
+
+        self.nav_timer_btn = IconButton("⏱️", "Timer")
         self.nav_timer_btn.setCheckable(True)
         self.nav_timer_btn.setChecked(True)
 
-        self.nav_task_btn = IconButton("📋")
+        self.nav_task_btn = IconButton("📋", "Tasks")
         self.nav_task_btn.setCheckable(True)
 
-        self.nav_stats_btn = IconButton("📊")
+        self.nav_stats_btn = IconButton("📊", "Stats")
         self.nav_stats_btn.setCheckable(True)
-
-        self.nav_settings_btn = IconButton("⚙️")
 
         layout.addWidget(self.nav_timer_btn)
         layout.addWidget(self.nav_task_btn)
         layout.addWidget(self.nav_stats_btn)
         layout.addStretch()
+
+        self.nav_settings_btn = IconButton("⚙️", "设置")
         layout.addWidget(self.nav_settings_btn)
+
+        self._nav_indicator = QFrame(nav_bar)
+        self._nav_indicator.setFixedWidth(3)
+        self._nav_indicator.setFixedHeight(48)
+        self._nav_indicator.setStyleSheet(
+            f"background-color: {colors['primary']}; border-radius: 2px;"
+        )
+        self._nav_indicator.raise_()
 
         return nav_bar
 
+    def _update_nav_indicator(self):
+        colors = self.theme_manager.get_colors()
+        self._nav_indicator.setStyleSheet(
+            f"background-color: {colors['primary']}; border-radius: 2px;"
+        )
+
+        target_btn = None
+        if self.nav_timer_btn.isChecked():
+            target_btn = self.nav_timer_btn
+        elif self.nav_task_btn.isChecked():
+            target_btn = self.nav_task_btn
+        elif self.nav_stats_btn.isChecked():
+            target_btn = self.nav_stats_btn
+
+        if target_btn:
+            global_pos = target_btn.mapTo(self.centralWidget(), target_btn.rect().topLeft())
+            self._nav_indicator.move(0, global_pos.y() + 12)
+            self._nav_indicator.setVisible(True)
+        else:
+            self._nav_indicator.setVisible(False)
+
     def create_top_bar(self) -> QWidget:
         colors = self.theme_manager.get_colors()
-        
+
         top_bar = QFrame()
         top_bar.setFixedHeight(64)
-        
-        layout = QHBoxLayout(top_bar)
-        layout.setContentsMargins(24, 16, 24, 16)
+        top_bar.setStyleSheet(
+            f"background-color: {colors['background']}; border-bottom: 1px solid {colors['border']};"
+        )
 
-        self.exam_countdown_label = QLabel("设置考研日期")
+        layout = QHBoxLayout(top_bar)
+        layout.setContentsMargins(32, 16, 32, 16)
+
+        self.exam_countdown_label = QLabel("🔥 设置考研日期")
         exam_font = QFont()
-        exam_font.setPointSize(15)
+        exam_font.setPointSize(18)
         exam_font.setBold(True)
         self.exam_countdown_label.setFont(exam_font)
-        self.exam_countdown_label.setStyleSheet(f"color: {colors['text']};")
+        self.exam_countdown_label.setStyleSheet(f"color: {colors['text_primary']}; border: none;")
         layout.addWidget(self.exam_countdown_label)
 
         layout.addStretch()
 
-        today_stat_label = QLabel("今日番茄: 0")
-        today_stat_label.setStyleSheet(f"color: {colors['text_secondary']}; font-size: 14px; font-weight: 500;")
-        self.today_stat_label = today_stat_label
-        layout.addWidget(today_stat_label)
+        today_stat_widget = QWidget()
+        today_stat_widget.setStyleSheet("border: none;")
+        today_stat_layout = QHBoxLayout(today_stat_widget)
+        today_stat_layout.setSpacing(8)
+        today_stat_layout.setContentsMargins(0, 0, 0, 0)
+
+        tomato_icon = QLabel("🍅")
+        tomato_icon.setStyleSheet("font-size: 16px; border: none;")
+        today_stat_layout.addWidget(tomato_icon)
+
+        self.today_stat_label = QLabel("0")
+        self.today_stat_label.setStyleSheet(
+            f"color: {colors['text_secondary']}; font-size: 14px; font-weight: 600; border: none;"
+        )
+        today_stat_layout.addWidget(self.today_stat_label)
+
+        layout.addWidget(today_stat_widget)
 
         return top_bar
 
@@ -165,11 +217,14 @@ class MainWindow(QMainWindow):
         self.exam_timer.start(60000)
 
     def switch_page(self, index: int):
-        self.stacked_widget.setCurrentIndex(index)
+        if self.stacked_widget.currentIndex() == index:
+            return
 
+        self.stacked_widget.setCurrentIndex(index)
         self.nav_timer_btn.setChecked(index == 0)
         self.nav_task_btn.setChecked(index == 1)
         self.nav_stats_btn.setChecked(index == 2)
+        self._update_nav_indicator()
 
         if index == 2:
             self.stats_panel.refresh()
@@ -201,7 +256,7 @@ class MainWindow(QMainWindow):
         from statistics import StatisticsManager
         stats = StatisticsManager()
         today_stats = stats.get_today_stats()
-        self.today_stat_label.setText(f"今日番茄: {today_stats['total_pomodoros']}")
+        self.today_stat_label.setText(str(today_stats['total_pomodoros']))
 
     def open_settings(self):
         dialog = SettingsDialog(self)
@@ -228,17 +283,14 @@ class MainWindow(QMainWindow):
             today = date.today()
             delta = self.exam_date - today
             if delta.days >= 0:
-                self.exam_countdown_label.setText(f"距离考研还有 {delta.days} 天")
+                self.exam_countdown_label.setText(f"🔥 距离考研还有 {delta.days} 天")
             else:
-                self.exam_countdown_label.setText("考研已结束")
+                self.exam_countdown_label.setText("🔥 考研已结束")
         else:
-            self.exam_countdown_label.setText("设置考研日期")
+            self.exam_countdown_label.setText("🔥 设置考研日期")
 
     def init_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
-        # 创建一个简单的图标作为系统托盘图标
-        # 尝试使用 Qt 内置的标准图标
-        from PyQt5.QtGui import QIcon
         from PyQt5.QtWidgets import QStyle
         icon = self.style().standardIcon(QStyle.SP_MessageBoxInformation)
         self.tray_icon.setIcon(icon)

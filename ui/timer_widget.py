@@ -4,9 +4,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPainter, QColor, QPen, QFont
 from timer import TimerState
-from themes import ThemeManager
+from themes import ThemeManager, Typography
 from ui.components import (
-    StyledButton, PrimaryButton, DangerButton,
+    StyledButton, PrimaryButton, DangerButton, GhostButton,
     CircularProgressBar, PomodoroIndicator, StyledCard
 )
 from utils.logger import get_logger
@@ -37,18 +37,21 @@ class TimerWidget(QWidget):
 
     def _update_styles(self):
         colors = self.theme_manager.get_colors()
-        self.task_label.setStyleSheet(f"color: {colors['text_secondary']}; font-size: 14px;")
+        self.task_label.setStyleSheet(
+            f"color: {colors['text_secondary']}; font-size: 14px; border: none;"
+        )
 
     def init_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(24)
+        layout.setAlignment(Qt.AlignCenter)
 
         card = StyledCard()
-        # 使用 StyledCard 已经创建好的布局
         card_layout = card.layout
-        card_layout.setContentsMargins(32, 32, 32, 32)
-        card_layout.setSpacing(20)
+        card_layout.setContentsMargins(40, 40, 40, 40)
+        card_layout.setSpacing(24)
+        card_layout.setAlignment(Qt.AlignCenter)
 
         self.state_label = QLabel("准备开始")
         self.state_label.setAlignment(Qt.AlignCenter)
@@ -60,45 +63,68 @@ class TimerWidget(QWidget):
 
         self.progress_bar = CircularProgressBar()
         self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        card_layout.addWidget(self.progress_bar)
+        self.progress_bar.setMinimumSize(280, 280)
+        card_layout.addWidget(self.progress_bar, 0, Qt.AlignCenter)
 
         self.time_label = QLabel("25:00")
         self.time_label.setAlignment(Qt.AlignCenter)
         time_font = QFont()
-        time_font.setPointSize(52)
+        time_font.setPointSize(48)
         time_font.setBold(True)
+        time_font.setFamily("Consolas")
         self.time_label.setFont(time_font)
         card_layout.addWidget(self.time_label)
+
+        task_widget = QWidget()
+        task_widget.setStyleSheet("border: none;")
+        task_layout = QHBoxLayout(task_widget)
+        task_layout.setAlignment(Qt.AlignCenter)
+        task_layout.setSpacing(8)
+        task_layout.setContentsMargins(0, 0, 0, 0)
+
+        task_icon = QLabel("📖")
+        task_icon.setStyleSheet("font-size: 16px; border: none;")
+        task_layout.addWidget(task_icon)
 
         self.task_label = QLabel(self.current_task_name)
         self.task_label.setAlignment(Qt.AlignCenter)
         self.task_label.setWordWrap(True)
-        card_layout.addWidget(self.task_label)
+        task_layout.addWidget(self.task_label)
+
+        card_layout.addWidget(task_widget)
 
         self.pomodoro_indicator = PomodoroIndicator()
         card_layout.addWidget(self.pomodoro_indicator)
 
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
+        button_layout.setAlignment(Qt.AlignCenter)
 
         self.start_pause_btn = PrimaryButton("开始")
+        self.start_pause_btn.setMinimumWidth(120)
         self.start_pause_btn.clicked.connect(self.on_start_pause_clicked)
         button_layout.addWidget(self.start_pause_btn)
 
-        self.reset_btn = StyledButton("重置")
+        self.reset_btn = GhostButton("重置")
         self.reset_btn.clicked.connect(self.on_reset_clicked)
         button_layout.addWidget(self.reset_btn)
 
-        self.skip_btn = StyledButton("跳过")
+        self.skip_btn = GhostButton("跳过")
         self.skip_btn.clicked.connect(self.on_skip_clicked)
         button_layout.addWidget(self.skip_btn)
 
         self.stop_btn = DangerButton("停止")
+        self.stop_btn.setStyleSheet(
+            self.stop_btn.styleSheet().replace(
+                "background-color: #DC2626",
+                "background-color: transparent; color: #DC2626; border: 2px solid #DC2626"
+            )
+        )
         self.stop_btn.clicked.connect(self.on_stop_clicked)
         button_layout.addWidget(self.stop_btn)
 
         card_layout.addLayout(button_layout)
-        layout.addWidget(card)
+        layout.addWidget(card, 0, Qt.AlignCenter)
 
         self._update_styles()
 
@@ -129,19 +155,28 @@ class TimerWidget(QWidget):
 
         if state == TimerState.FOCUS:
             self.state_label.setText("专注中")
-            self.state_label.setStyleSheet(f"color: {colors['focus']}; font-size: 18px; font-weight: bold;")
+            self.state_label.setStyleSheet(
+                f"color: {colors['focus']}; font-size: 18px; font-weight: bold; border: none;"
+            )
             self.progress_bar.set_color(QColor(colors["focus"]))
         elif state == TimerState.SHORT_BREAK:
             self.state_label.setText("短休息")
-            self.state_label.setStyleSheet(f"color: {colors['short_break']}; font-size: 18px; font-weight: bold;")
+            self.state_label.setStyleSheet(
+                f"color: {colors['short_break']}; font-size: 18px; font-weight: bold; border: none;"
+            )
             self.progress_bar.set_color(QColor(colors["short_break"]))
         elif state == TimerState.LONG_BREAK:
             self.state_label.setText("长休息")
-            self.state_label.setStyleSheet(f"color: {colors['long_break']}; font-size: 18px; font-weight: bold;")
+            self.state_label.setStyleSheet(
+                f"color: {colors['long_break']}; font-size: 18px; font-weight: bold; border: none;"
+            )
             self.progress_bar.set_color(QColor(colors["long_break"]))
         else:
             self.state_label.setText("准备开始")
-            self.state_label.setStyleSheet(f"color: {colors['text_secondary']}; font-size: 18px; font-weight: bold;")
+            self.state_label.setStyleSheet(
+                f"color: {colors['text_secondary']}; font-size: 18px; font-weight: bold; border: none;"
+            )
+            self.progress_bar.set_color(QColor(colors["primary"]))
 
     def set_is_running(self, is_running: bool):
         self.is_timer_running = is_running

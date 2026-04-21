@@ -6,10 +6,10 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from models import Task, SubjectEnum, PriorityEnum
 from task_manager import TaskManager
-from themes import ThemeManager
+from themes import ThemeManager, Radius
 from ui.components import (
-    StyledButton, PrimaryButton, DangerButton, SuccessButton,
-    StyledCard, StyledLineEdit, StyledComboBox
+    StyledButton, PrimaryButton, DangerButton, SuccessButton, GhostButton,
+    StyledCard, StyledLineEdit, StyledComboBox, IconOnlyButton, EmptyState
 )
 from utils.logger import get_logger
 
@@ -31,24 +31,50 @@ class TaskItemWidget(QFrame):
 
     def _update_styles(self):
         colors = self.theme_manager.get_colors()
-        self.subject_label.setStyleSheet(f"color: {colors['text_secondary']}; font-size: 13px;")
-        if self.task.notes:
-            self.notes_label.setStyleSheet(f"color: {colors['text_muted']}; font-size: 12px;")
+        is_dark = self.theme_manager.is_dark_theme()
 
-    def init_ui(self):
-        colors = self.theme_manager.get_colors()
-        
-        self.setFrameShape(QFrame.StyledPanel)
+        if is_dark:
+            border = f"1px solid {colors['border']}"
+        else:
+            border = "none"
+
         self.setStyleSheet(f"""
             TaskItemWidget {{
-                background-color: {colors['card_background']};
-                border: 1px solid {colors['border']};
-                border-radius: 10px;
+                background-color: {colors['surface']};
+                border: {border};
+                border-radius: {Radius.LG}px;
             }}
         """)
 
+        if self.subject_label:
+            self.subject_label.setStyleSheet(
+                f"color: {colors['text_secondary']}; font-size: 12px; border: none;"
+            )
+        if self.notes_label:
+            self.notes_label.setStyleSheet(
+                f"color: {colors['text_tertiary']}; font-size: 12px; border: none;"
+            )
+
+    def init_ui(self):
+        colors = self.theme_manager.get_colors()
+        is_dark = self.theme_manager.is_dark_theme()
+
+        if is_dark:
+            border = f"1px solid {colors['border']}"
+        else:
+            border = "none"
+
+        self.setStyleSheet(f"""
+            TaskItemWidget {{
+                background-color: {colors['surface']};
+                border: {border};
+                border-radius: {Radius.LG}px;
+            }}
+        """)
+        self.setFrameShape(QFrame.StyledPanel)
+
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setContentsMargins(20, 16, 16, 16)
         layout.setSpacing(16)
 
         info_layout = QVBoxLayout()
@@ -60,45 +86,52 @@ class TaskItemWidget(QFrame):
         name_font.setPointSize(14)
         name_label.setFont(name_font)
         name_label.setWordWrap(True)
+        name_label.setStyleSheet(f"color: {colors['text_primary']}; border: none;")
         info_layout.addWidget(name_label)
 
-        self.subject_label = QLabel(f"{self.task.subject} | 预估: {self.task.estimated_pomodoros} | 实际: {self.task.actual_pomodoros}")
+        self.subject_label = QLabel(
+            f"{self.task.subject} | 预估: {self.task.estimated_pomodoros} | 实际: {self.task.actual_pomodoros}"
+        )
+        self.subject_label.setStyleSheet(
+            f"color: {colors['text_secondary']}; font-size: 12px; border: none;"
+        )
         info_layout.addWidget(self.subject_label)
 
         if self.task.notes:
             self.notes_label = QLabel(self.task.notes)
             self.notes_label.setWordWrap(True)
+            self.notes_label.setStyleSheet(
+                f"color: {colors['text_tertiary']}; font-size: 12px; border: none;"
+            )
             info_layout.addWidget(self.notes_label)
 
         layout.addLayout(info_layout, 1)
 
-        button_layout = QVBoxLayout()
-        button_layout.setSpacing(8)
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(4)
 
-        select_btn = PrimaryButton("选择")
-        select_btn.setFixedWidth(90)
+        select_btn = IconOnlyButton("✓", size=32)
+        select_btn.setToolTip("选择")
         select_btn.clicked.connect(lambda: self.task_selected.emit(self.task.id))
         button_layout.addWidget(select_btn)
 
-        edit_btn = StyledButton("编辑")
-        edit_btn.setFixedWidth(90)
+        edit_btn = IconOnlyButton("✎", size=32)
+        edit_btn.setToolTip("编辑")
         edit_btn.clicked.connect(lambda: self.task_edited.emit(self.task.id))
         button_layout.addWidget(edit_btn)
 
         if self.task.status != "已完成":
-            complete_btn = SuccessButton("完成")
-            complete_btn.setFixedWidth(90)
+            complete_btn = IconOnlyButton("✓", size=32)
+            complete_btn.setToolTip("完成")
             complete_btn.clicked.connect(lambda: self.task_completed.emit(self.task.id))
             button_layout.addWidget(complete_btn)
 
-        delete_btn = DangerButton("删除")
-        delete_btn.setFixedWidth(90)
+        delete_btn = IconOnlyButton("✕", size=32)
+        delete_btn.setToolTip("删除")
         delete_btn.clicked.connect(lambda: self.task_deleted.emit(self.task.id))
         button_layout.addWidget(delete_btn)
 
         layout.addLayout(button_layout)
-        
-        self._update_styles()
 
 
 class TaskEditDialog(QDialog):
@@ -108,17 +141,34 @@ class TaskEditDialog(QDialog):
         self.theme_manager = ThemeManager()
         self.init_ui()
         self.setWindowTitle("编辑任务" if task else "新建任务")
-        self.resize(450, 380)
+        self.resize(480, 420)
 
     def init_ui(self):
+        colors = self.theme_manager.get_colors()
+        is_dark = self.theme_manager.is_dark_theme()
+
+        if is_dark:
+            border = f"1px solid {colors['border']}"
+        else:
+            border = "none"
+
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {colors['background']};
+                border: {border};
+                border-radius: {Radius.XL}px;
+            }}
+        """)
+
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 24, 24, 24)
-        layout.setSpacing(16)
+        layout.setContentsMargins(32, 32, 32, 32)
+        layout.setSpacing(20)
 
         form_layout = QFormLayout()
-        form_layout.setSpacing(12)
+        form_layout.setSpacing(16)
+        form_layout.setLabelAlignment(Qt.AlignRight)
 
-        self.name_edit = StyledLineEdit()
+        self.name_edit = StyledLineEdit(placeholder="输入任务名称")
         self.name_edit.setText(self.task.name if self.task else "")
         form_layout.addRow("任务名称:", self.name_edit)
 
@@ -140,24 +190,13 @@ class TaskEditDialog(QDialog):
                 self.priority_combo.setCurrentIndex(index)
         form_layout.addRow("优先级:", self.priority_combo)
 
-        self.pomodoro_spin = StyledLineEdit()
-        self.pomodoro_spin.setText(str(self.task.estimated_pomodoros) if self.task else "1")
-        form_layout.addRow("预估番茄数:", self.pomodoro_spin)
+        self.pomodoro_edit = StyledLineEdit(placeholder="预估番茄数")
+        self.pomodoro_edit.setText(str(self.task.estimated_pomodoros) if self.task else "1")
+        form_layout.addRow("预估番茄数:", self.pomodoro_edit)
 
-        from PyQt5.QtWidgets import QTextEdit
-        self.notes_edit = QTextEdit()
+        from ui.components import StyledTextEdit
+        self.notes_edit = StyledTextEdit(placeholder="添加备注（可选）")
         self.notes_edit.setMaximumHeight(100)
-        self.notes_edit.setStyleSheet(f"""
-            QTextEdit {{
-                background-color: {self.theme_manager.get_colors()['card_background']};
-                color: {self.theme_manager.get_colors()['text']};
-                border: 2px solid {self.theme_manager.get_colors()['border']};
-                border-radius: 8px;
-                padding: 10px 14px;
-                font-size: 14px;
-                selection-background-color: {self.theme_manager.get_colors()['focus']};
-            }}
-        """)
         self.notes_edit.setText(self.task.notes if self.task else "")
         form_layout.addRow("备注:", self.notes_edit)
 
@@ -166,19 +205,19 @@ class TaskEditDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
         button_layout.addStretch()
-        
-        cancel_btn = StyledButton("取消")
+
+        cancel_btn = GhostButton("取消")
         cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(cancel_btn)
-        
+
         ok_btn = PrimaryButton("确定")
         ok_btn.clicked.connect(self.accept)
         button_layout.addWidget(ok_btn)
-        
+
         layout.addLayout(button_layout)
 
     def get_data(self) -> dict:
-        pomodoro_text = self.pomodoro_spin.text().strip()
+        pomodoro_text = self.pomodoro_edit.text().strip()
         try:
             estimated_pomodoros = int(pomodoro_text) if pomodoro_text else 1
         except ValueError:
@@ -210,13 +249,17 @@ class TaskPanel(QWidget):
         layout.setSpacing(16)
 
         toolbar = StyledCard()
-        # 使用 StyledCard 已经创建好的布局
         toolbar_layout = toolbar.layout
         toolbar_layout.setContentsMargins(16, 12, 16, 12)
+        toolbar_layout.setSpacing(12)
 
         add_btn = PrimaryButton("+ 新建任务")
         add_btn.clicked.connect(self.on_add_task)
         toolbar_layout.addWidget(add_btn)
+
+        self.search_edit = StyledLineEdit(placeholder="🔍 搜索任务...")
+        self.search_edit.textChanged.connect(self.on_search_changed)
+        toolbar_layout.addWidget(self.search_edit)
 
         self.filter_combo = StyledComboBox()
         self.filter_combo.addItem("全部", "all")
@@ -235,18 +278,28 @@ class TaskPanel(QWidget):
         self.task_list = QListWidget()
         self.task_list.setSpacing(10)
         self.task_list.setFrameShape(QFrame.NoFrame)
-        self.task_list.setStyleSheet(f"""
-            QListWidget {{
+        self.task_list.setStyleSheet("""
+            QListWidget {
                 background-color: transparent;
                 border: none;
-            }}
+            }
         """)
         layout.addWidget(self.task_list)
+
+        self.empty_state = EmptyState(
+            icon="📋",
+            title="还没有任务",
+            subtitle="创建一个任务，开始专注学习吧"
+        )
+        self.empty_state.set_action("创建任务", self.on_add_task)
+        self.empty_state.setVisible(False)
+        layout.addWidget(self.empty_state)
 
     def load_tasks(self):
         self.task_list.clear()
 
         filter_type = self.filter_combo.currentData()
+        search_text = self.search_edit.text().strip().lower()
 
         if filter_type == "all":
             tasks = self.task_manager.get_all_tasks()
@@ -254,6 +307,17 @@ class TaskPanel(QWidget):
             tasks = self.task_manager.get_all_tasks(status=filter_type)
         else:
             tasks = self.task_manager.get_all_tasks(subject=filter_type)
+
+        if search_text:
+            tasks = [t for t in tasks if search_text in t.name.lower()]
+
+        if not tasks:
+            self.task_list.setVisible(False)
+            self.empty_state.setVisible(True)
+            return
+
+        self.task_list.setVisible(True)
+        self.empty_state.setVisible(False)
 
         for task in tasks:
             item = QListWidgetItem()
@@ -323,6 +387,9 @@ class TaskPanel(QWidget):
             logger.info("任务完成")
 
     def on_filter_changed(self):
+        self.load_tasks()
+
+    def on_search_changed(self):
         self.load_tasks()
 
     def refresh(self):

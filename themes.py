@@ -14,43 +14,103 @@ class ThemeType(Enum):
 
 class Colors:
     DARK: dict[str, str] = {
-        "background": "#0F172A",
-        "card_background": "#1E293B",
-        "border": "#334155",
-        "text": "#F8FAFC",
-        "text_secondary": "#94A3B8",
-        "text_muted": "#64748B",
-        "focus": "#F97316",
-        "short_break": "#22C55E",
-        "long_break": "#3B82F6",
-        "danger": "#EF4444",
-        "success": "#10B981",
-        "info": "#06B6D4",
-        "shadow_light": "rgba(0,0,0,0.05)",
-        "shadow_medium": "rgba(0,0,0,0.1)",
-        "shadow_heavy": "rgba(0,0,0,0.15)"
+        "primary": "#E85D04",
+        "primary_hover": "#D14903",
+        "primary_pressed": "#B83D02",
+        "focus": "#E85D04",
+        "short_break": "#2D6A4F",
+        "long_break": "#4361EE",
+        "danger": "#DC2626",
+        "success": "#059669",
+        "info": "#0891B2",
+        "background": "#121212",
+        "surface": "#1E1E1E",
+        "surface_elevated": "#252525",
+        "border": "#2D2D2D",
+        "text_primary": "#E8E8E8",
+        "text_secondary": "#A1A1AA",
+        "text_tertiary": "#71717A",
+        "text_inverse": "#1A1A1A",
+        "shadow_light": "0 0 0 1px rgba(255,255,255,0.05)",
+        "shadow_medium": "0 0 0 1px rgba(255,255,255,0.08)",
+        "shadow_heavy": "0 0 0 1px rgba(255,255,255,0.12)",
     }
-    
+
     LIGHT: dict[str, str] = {
-        "background": "#F8FAFC",
-        "card_background": "#FFFFFF",
-        "border": "#E2E8F0",
-        "text": "#1E293B",
-        "text_secondary": "#64748B",
-        "text_muted": "#94A3B8",
-        "focus": "#F97316",
-        "short_break": "#22C55E",
-        "long_break": "#3B82F6",
-        "danger": "#EF4444",
-        "success": "#10B981",
-        "info": "#06B6D4",
-        "shadow_light": "rgba(0,0,0,0.05)",
-        "shadow_medium": "rgba(0,0,0,0.1)",
-        "shadow_heavy": "rgba(0,0,0,0.1)"
+        "primary": "#E85D04",
+        "primary_hover": "#D14903",
+        "primary_pressed": "#B83D02",
+        "focus": "#E85D04",
+        "short_break": "#2D6A4F",
+        "long_break": "#4361EE",
+        "danger": "#DC2626",
+        "success": "#059669",
+        "info": "#0891B2",
+        "background": "#FAFAF8",
+        "surface": "#FFFFFF",
+        "surface_elevated": "#FFFBF7",
+        "border": "#E8E5E0",
+        "text_primary": "#1A1A1A",
+        "text_secondary": "#6B7280",
+        "text_tertiary": "#9CA3AF",
+        "text_inverse": "#FFFFFF",
+        "shadow_light": "0 1px 3px rgba(0,0,0,0.06)",
+        "shadow_medium": "0 4px 12px rgba(0,0,0,0.08)",
+        "shadow_heavy": "0 8px 24px rgba(0,0,0,0.10)",
     }
+
+
+class Typography:
+    FONT_FAMILY = '"SF Pro Display", "Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif'
+    FONT_FAMILY_MONO = '"SF Mono", "Consolas", "Microsoft YaHei", monospace'
+
+    DISPLAY = {"size": "48px", "weight": "bold", "line_height": "1.1"}
+    H1 = {"size": "28px", "weight": "bold", "line_height": "1.2"}
+    H2 = {"size": "20px", "weight": "600", "line_height": "1.3"}
+    H3 = {"size": "16px", "weight": "600", "line_height": "1.4"}
+    BODY = {"size": "14px", "weight": "400", "line_height": "1.5"}
+    CAPTION = {"size": "12px", "weight": "400", "line_height": "1.4"}
+    OVERLINE = {"size": "11px", "weight": "500", "line_height": "1.2"}
+
+    @classmethod
+    def get_style(cls, level: str, color: str = None) -> str:
+        token = getattr(cls, level.upper(), cls.BODY)
+        style = f"font-size: {token['size']}; font-weight: {token['weight']}; line-height: {token['line_height']};"
+        if color:
+            style += f" color: {color};"
+        return style
+
+
+class Spacing:
+    SPACE_1 = 4
+    SPACE_2 = 8
+    SPACE_3 = 12
+    SPACE_4 = 16
+    SPACE_5 = 20
+    SPACE_6 = 24
+    SPACE_8 = 32
+    SPACE_10 = 40
+    SPACE_12 = 48
+
+
+class Shadows:
+    @staticmethod
+    def get_shadow(level: str, is_dark: bool) -> str:
+        if is_dark:
+            return Colors.DARK.get(f"shadow_{level}", "")
+        return Colors.LIGHT.get(f"shadow_{level}", "")
+
+
+class Radius:
+    SM = 8
+    MD = 12
+    LG = 16
+    XL = 20
+    FULL = 9999
 
 
 import threading
+
 
 class ThemeManager(QObject):
     _instance = None
@@ -100,19 +160,19 @@ class ThemeManager(QObject):
 
         colors = self.get_colors()
         palette = QPalette()
-        
+
         palette.setColor(QPalette.Window, QColor(colors["background"]))
-        palette.setColor(QPalette.WindowText, QColor(colors["text"]))
-        palette.setColor(QPalette.Base, QColor(colors["card_background"]))
+        palette.setColor(QPalette.WindowText, QColor(colors["text_primary"]))
+        palette.setColor(QPalette.Base, QColor(colors["surface"]))
         palette.setColor(QPalette.AlternateBase, QColor(colors["background"]))
-        palette.setColor(QPalette.ToolTipBase, QColor(colors["card_background"]))
-        palette.setColor(QPalette.ToolTipText, QColor(colors["text"]))
-        palette.setColor(QPalette.Text, QColor(colors["text"]))
-        palette.setColor(QPalette.Button, QColor(colors["card_background"]))
-        palette.setColor(QPalette.ButtonText, QColor(colors["text"]))
+        palette.setColor(QPalette.ToolTipBase, QColor(colors["surface"]))
+        palette.setColor(QPalette.ToolTipText, QColor(colors["text_primary"]))
+        palette.setColor(QPalette.Text, QColor(colors["text_primary"]))
+        palette.setColor(QPalette.Button, QColor(colors["surface"]))
+        palette.setColor(QPalette.ButtonText, QColor(colors["text_primary"]))
         palette.setColor(QPalette.BrightText, QColor(colors["danger"]))
         palette.setColor(QPalette.Link, QColor(colors["info"]))
-        palette.setColor(QPalette.Highlight, QColor(colors["focus"]))
+        palette.setColor(QPalette.Highlight, QColor(colors["primary"]))
         palette.setColor(QPalette.HighlightedText, QColor("#FFFFFF"))
 
         app.setPalette(palette)
@@ -148,241 +208,71 @@ class ThemeManager(QObject):
             "short_break": colors["short_break"],
             "long_break": colors["long_break"],
             "background": colors["background"],
-            "card_background": colors["card_background"],
-            "text": colors["text"],
+            "surface": colors["surface"],
+            "surface_elevated": colors["surface_elevated"],
+            "text_primary": colors["text_primary"],
             "text_secondary": colors["text_secondary"],
-            "text_muted": colors["text_muted"],
+            "text_tertiary": colors["text_tertiary"],
             "border": colors["border"],
             "danger": colors["danger"],
-            "success": colors["success"]
+            "success": colors["success"],
+            "primary": colors["primary"],
         }
 
     def get_stylesheet(self) -> str:
         colors = self.get_colors()
-        
-        return f"""
-        QWidget {{
-            background-color: {colors["background"]};
-            color: {colors["text"]};
-            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
-        }}
-        
-        QPushButton {{
-            background-color: {colors["card_background"]};
-            color: {colors["text"]};
-            border: 1px solid {colors["border"]};
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: 500;
-        }}
-        
-        QPushButton:hover {{
-            background-color: {colors["border"]};
-            border: 1px solid {colors["text_secondary"]};
-        }}
-        
-        QPushButton:pressed {{
-            background-color: {colors["border"]};
-        }}
-        
-        QPushButton:checked {{
-            background-color: {colors["focus"]};
-            color: #FFFFFF;
-            border: 1px solid {colors["focus"]};
-        }}
-        
-        QLineEdit, QTextEdit, QPlainTextEdit {{
-            background-color: {colors["card_background"]};
-            color: {colors["text"]};
-            border: 1px solid {colors["border"]};
-            border-radius: 6px;
-            padding: 8px;
-            selection-background-color: {colors["focus"]};
-        }}
-        
-        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{
-            border: 2px solid {colors["focus"]};
-        }}
-        
-        QComboBox {{
-            background-color: {colors["card_background"]};
-            color: {colors["text"]};
-            border: 1px solid {colors["border"]};
-            border-radius: 6px;
-            padding: 6px 12px;
-        }}
-        
-        QComboBox:hover {{
-            border: 1px solid {colors["text_secondary"]};
-        }}
-        
-        QComboBox::drop-down {{
-            border: none;
-            width: 20px;
-        }}
-        
-        QComboBox::down-arrow {{
-            image: none;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 5px solid {colors["text_secondary"]};
-            margin-right: 8px;
-        }}
-        
-        QComboBox QAbstractItemView {{
-            background-color: {colors["card_background"]};
-            color: {colors["text"]};
-            border: 1px solid {colors["border"]};
-            selection-background-color: {colors["focus"]};
-            selection-color: #FFFFFF;
-            padding: 4px;
-        }}
-        
-        QTabWidget::pane {{
-            border: none;
-            background-color: {colors["background"]};
-        }}
-        
-        QTabBar::tab {{
-            background-color: {colors["background"]};
-            color: {colors["text_secondary"]};
-            padding: 10px 20px;
-            border: none;
-            border-bottom: 2px solid transparent;
-            margin-right: 4px;
-            font-size: 14px;
-            font-weight: 500;
-        }}
-        
-        QTabBar::tab:selected {{
-            color: {colors["text"]};
-            border-bottom: 2px solid {colors["focus"]};
-        }}
-        
-        QTabBar::tab:hover:!selected {{
-            color: {colors["text"]};
-            background-color: {colors["card_background"]};
-        }}
-        
-        QScrollArea {{
-            border: none;
-            background-color: transparent;
-        }}
-        
-        QScrollBar:vertical {{
-            background-color: transparent;
-            width: 8px;
-            border-radius: 4px;
-            margin: 0px;
-        }}
-        
-        QScrollBar::handle:vertical {{
-            background-color: {colors["border"]};
-            border-radius: 4px;
-            min-height: 30px;
-        }}
-        
-        QScrollBar::handle:vertical:hover {{
-            background-color: {colors["text_secondary"]};
-        }}
-        
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-            height: 0px;
-        }}
-        
-        QScrollBar:horizontal {{
-            background-color: transparent;
-            height: 8px;
-            border-radius: 4px;
-            margin: 0px;
-        }}
-        
-        QScrollBar::handle:horizontal {{
-            background-color: {colors["border"]};
-            border-radius: 4px;
-            min-width: 30px;
-        }}
-        
-        QScrollBar::handle:horizontal:hover {{
-            background-color: {colors["text_secondary"]};
-        }}
-        
-        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
-            width: 0px;
-        }}
-        
-        QSpinBox {{
-            background-color: {colors["card_background"]};
-            color: {colors["text"]};
-            border: 1px solid {colors["border"]};
-            border-radius: 6px;
-            padding: 6px;
-        }}
-        
-        QSpinBox:focus {{
-            border: 2px solid {colors["focus"]};
-        }}
-        
-        QSpinBox::up-button, QSpinBox::down-button {{
-            border: none;
-            background-color: transparent;
-            width: 20px;
-        }}
-        
-        QSpinBox::up-arrow {{
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-bottom: 5px solid {colors["text_secondary"]};
-        }}
-        
-        QSpinBox::down-arrow {{
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 5px solid {colors["text_secondary"]};
-        }}
-        
-        QCheckBox {{
-            color: {colors["text"]};
-            spacing: 8px;
-        }}
-        
-        QCheckBox::indicator {{
-            width: 18px;
-            height: 18px;
-            border: 2px solid {colors["border"]};
-            border-radius: 4px;
-            background-color: {colors["card_background"]};
-        }}
-        
-        QCheckBox::indicator:hover {{
-            border-color: {colors["text_secondary"]};
-        }}
-        
-        QCheckBox::indicator:checked {{
-            background-color: {colors["focus"]};
-            border-color: {colors["focus"]};
-        }}
-        
-        QListWidget {{
-            background-color: {colors["background"]};
-            border: none;
-            outline: none;
-        }}
-        
-        QListWidget::item {{
-            background-color: transparent;
-            padding: 4px;
-            border-radius: 6px;
-            margin: 2px 0px;
-        }}
-        
-        QListWidget::item:hover {{
-            background-color: {colors["card_background"]};
-        }}
-        
-        QListWidget::item:selected {{
-            background-color: {colors["focus"]};
-            color: #FFFFFF;
-        }}
-        """
+        is_dark = self.is_dark_theme()
+
+        border_style = "1px solid " + colors["border"]
+        if not is_dark:
+            border_style = "none"
+
+        ss = ""
+        ss += "QWidget { background-color: " + colors["background"] + "; color: " + colors["text_primary"] + "; font-family: " + Typography.FONT_FAMILY + "; font-size: 14px; line-height: 1.5; }\n"
+        ss += "QPushButton { background-color: " + colors["surface"] + "; color: " + colors["text_primary"] + "; border: " + border_style + "; border-radius: " + str(Radius.MD) + "px; padding: 10px 20px; font-size: 14px; font-weight: 600; min-height: 40px; }\n"
+        ss += "QPushButton:hover { background-color: " + colors["surface_elevated"] + "; }\n"
+        ss += "QPushButton:pressed { background-color: " + colors["border"] + "; }\n"
+        ss += "QPushButton:checked { background-color: " + colors["primary"] + "; color: #FFFFFF; border: 1px solid " + colors["primary"] + "; }\n"
+        ss += "QPushButton:disabled { background-color: " + colors["background"] + "; color: " + colors["text_tertiary"] + "; border: 1px solid " + colors["border"] + "; }\n"
+        ss += "QLineEdit, QTextEdit, QPlainTextEdit { background-color: " + colors["surface"] + "; color: " + colors["text_primary"] + "; border: 2px solid " + colors["border"] + "; border-radius: " + str(Radius.MD) + "px; padding: 10px 14px; font-size: 14px; selection-background-color: " + colors["primary"] + "; selection-color: #FFFFFF; min-height: 44px; }\n"
+        ss += "QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus { border: 2px solid " + colors["primary"] + "; }\n"
+        ss += "QLineEdit::placeholder, QTextEdit::placeholder, QPlainTextEdit::placeholder { color: " + colors["text_tertiary"] + "; }\n"
+        ss += "QComboBox { background-color: " + colors["surface"] + "; color: " + colors["text_primary"] + "; border: 2px solid " + colors["border"] + "; border-radius: " + str(Radius.MD) + "px; padding: 8px 14px; padding-right: 30px; font-size: 14px; min-height: 44px; }\n"
+        ss += "QComboBox:hover { border-color: " + colors["text_secondary"] + "; }\n"
+        ss += "QComboBox:focus { border-color: " + colors["primary"] + "; }\n"
+        ss += "QComboBox::drop-down { border: none; width: 30px; }\n"
+        ss += "QComboBox::down-arrow { image: none; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid " + colors["text_secondary"] + "; margin-right: 10px; }\n"
+        ss += "QComboBox QAbstractItemView { background-color: " + colors["surface"] + "; color: " + colors["text_primary"] + "; border: 1px solid " + colors["border"] + "; border-radius: " + str(Radius.MD) + "px; selection-background-color: " + colors["primary"] + "; selection-color: #FFFFFF; padding: 6px; outline: none; }\n"
+        ss += "QComboBox QAbstractItemView::item { padding: 8px 12px; border-radius: 4px; margin: 2px; }\n"
+        ss += "QComboBox QAbstractItemView::item:hover { background-color: " + colors["border"] + "; }\n"
+        ss += "QTabWidget::pane { border: none; background-color: transparent; }\n"
+        ss += "QTabBar::tab { background-color: transparent; color: " + colors["text_secondary"] + "; padding: 12px 24px; border: none; border-bottom: 2px solid transparent; margin-right: 4px; font-size: 14px; font-weight: 500; }\n"
+        ss += "QTabBar::tab:selected { color: " + colors["text_primary"] + "; border-bottom: 2px solid " + colors["primary"] + "; }\n"
+        ss += "QTabBar::tab:hover:!selected { color: " + colors["text_primary"] + "; background-color: " + colors["surface"] + "; }\n"
+        ss += "QScrollArea { border: none; background-color: transparent; }\n"
+        ss += "QScrollBar:vertical { background-color: transparent; width: 8px; border-radius: 4px; margin: 0px; }\n"
+        ss += "QScrollBar::handle:vertical { background-color: " + colors["border"] + "; border-radius: 4px; min-height: 30px; }\n"
+        ss += "QScrollBar::handle:vertical:hover { background-color: " + colors["text_secondary"] + "; }\n"
+        ss += "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }\n"
+        ss += "QScrollBar:horizontal { background-color: transparent; height: 8px; border-radius: 4px; margin: 0px; }\n"
+        ss += "QScrollBar::handle:horizontal { background-color: " + colors["border"] + "; border-radius: 4px; min-width: 30px; }\n"
+        ss += "QScrollBar::handle:horizontal:hover { background-color: " + colors["text_secondary"] + "; }\n"
+        ss += "QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }\n"
+        ss += "QSpinBox { background-color: " + colors["surface"] + "; color: " + colors["text_primary"] + "; border: 2px solid " + colors["border"] + "; border-radius: " + str(Radius.MD) + "px; padding: 8px; font-size: 14px; min-height: 44px; }\n"
+        ss += "QSpinBox:focus { border: 2px solid " + colors["primary"] + "; }\n"
+        ss += "QSpinBox::up-button, QSpinBox::down-button { border: none; background-color: transparent; width: 24px; }\n"
+        ss += "QSpinBox::up-arrow { border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid " + colors["text_secondary"] + "; }\n"
+        ss += "QSpinBox::down-arrow { border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid " + colors["text_secondary"] + "; }\n"
+        ss += "QCheckBox { color: " + colors["text_primary"] + "; spacing: 10px; font-size: 14px; }\n"
+        ss += "QCheckBox::indicator { width: 20px; height: 20px; border: 2px solid " + colors["border"] + "; border-radius: 6px; background-color: " + colors["surface"] + "; }\n"
+        ss += "QCheckBox::indicator:hover { border-color: " + colors["text_secondary"] + "; }\n"
+        ss += "QCheckBox::indicator:checked { background-color: " + colors["primary"] + "; border-color: " + colors["primary"] + "; }\n"
+        ss += "QListWidget { background-color: transparent; border: none; outline: none; }\n"
+        ss += "QListWidget::item { background-color: transparent; padding: 4px; border-radius: 6px; margin: 2px 0px; }\n"
+        ss += "QListWidget::item:hover { background-color: " + colors["surface"] + "; }\n"
+        ss += "QListWidget::item:selected { background-color: " + colors["primary"] + "; color: #FFFFFF; }\n"
+        ss += "QFrame[frameShape=\"4\"] { color: " + colors["border"] + "; }\n"
+        ss += "QDialog { background-color: " + colors["background"] + "; border-radius: " + str(Radius.XL) + "px; }\n"
+        ss += "QMessageBox { background-color: " + colors["background"] + "; }\n"
+        ss += "QMessageBox QPushButton { min-width: 80px; }\n"
+        return ss

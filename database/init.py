@@ -35,8 +35,7 @@ def init_database():
         )
         cursor = conn.cursor()
         cursor.execute(
-            "CREATE DATABASE IF NOT EXISTS %s CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
-            (db_name,)
+            f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
         )
         cursor.close()
         logger.info("数据库创建成功")
