@@ -31,9 +31,9 @@ class Colors:
         "text_secondary": "#A1A1AA",
         "text_tertiary": "#71717A",
         "text_inverse": "#1A1A1A",
-        "shadow_light": "0 0 0 1px rgba(255,255,255,0.05)",
-        "shadow_medium": "0 0 0 1px rgba(255,255,255,0.08)",
-        "shadow_heavy": "0 0 0 1px rgba(255,255,255,0.12)",
+        "shadow_light": "0 1px 3px rgba(255,255,255,0.06)",
+        "shadow_medium": "0 4px 12px rgba(255,255,255,0.08)",
+        "shadow_heavy": "0 8px 24px rgba(255,255,255,0.10)",
     }
 
     LIGHT: dict[str, str] = {
