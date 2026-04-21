@@ -1,3 +1,5 @@
+import atexit
+import threading
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import QueuePool
@@ -7,8 +9,6 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-
-import threading
 
 class DatabaseManager:
     _instance = None
@@ -28,11 +28,13 @@ class DatabaseManager:
             self._initialized = True
             self._init_engine()
             self._init_session_factory()
+            atexit.register(self.dispose)
 
     def _init_engine(self):
         config = Config()
         db_url = config.get_database_url()
-        logger.info(f"初始化数据库连接: {db_url.split('@')[0]}@***")
+        host = config.get('DB_HOST', 'localhost')
+        logger.info(f"初始化数据库连接: {host}@***")
 
         self._engine = create_engine(
             db_url,

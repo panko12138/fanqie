@@ -50,13 +50,17 @@ class Colors:
     }
 
 
+import threading
+
 class ThemeManager(QObject):
     _instance = None
+    _lock = threading.Lock()
     theme_changed = pyqtSignal(ThemeType)
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self):

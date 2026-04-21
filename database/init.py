@@ -14,11 +14,17 @@ logger = get_logger(__name__)
 
 def init_database():
     from config import Config
-    import re
-    config = Config()
-    
-    # 先连接到MySQL服务器创建数据库
     import mysql.connector
+    from mysql.connector import Error as MySQLError
+    config = Config()
+
+    db_name = config.get('DB_NAME')
+    if not db_name or not isinstance(db_name, str):
+        raise ValueError("数据库名称无效")
+
+    if not _validate_db_name(db_name):
+        raise ValueError(f"数据库名称包含非法字符: {db_name}")
+
     conn = None
     try:
         conn = mysql.connector.connect(
@@ -28,23 +34,18 @@ def init_database():
             password=config.get('DB_PASSWORD')
         )
         cursor = conn.cursor()
-        db_name = config.get('DB_NAME')
-        
-        # 验证数据库名，防止SQL注入
-        if not re.match(r'^[a-zA-Z0-9_\-]+$', db_name):
-            raise ValueError(f"无效的数据库名: {db_name}")
-        
-        # 直接使用反引号包裹数据库名，因为已经通过正则验证
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+        cursor.execute(
+            "CREATE DATABASE IF NOT EXISTS %s CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+            (db_name,)
+        )
         cursor.close()
-        logger.info(f"数据库 {db_name} 创建成功")
-    except Exception as e:
+        logger.info("数据库创建成功")
+    except MySQLError as e:
         logger.warning(f"创建数据库失败: {e}")
     finally:
         if conn and conn.is_connected():
             conn.close()
-    
-    # 现在连接到具体数据库
+
     db_manager = get_db_manager()
     engine = db_manager.get_engine()
 
@@ -61,6 +62,11 @@ def init_database():
     logger.info("数据库初始化完成！")
 
 
+def _validate_db_name(db_name: str) -> bool:
+    import re
+    return bool(re.match(r'^[a-zA-Z0-9_\-]+$', db_name))
+
+
 def init_settings(session):
     default_settings = [
         ("focus_duration", "1500"),
@@ -74,9 +80,9 @@ def init_settings(session):
         ("exam_date", ""),
     ]
 
+    existing_keys = {s.key for s in session.query(Setting.key).all()}
     for key, value in default_settings:
-        existing = session.query(Setting).filter_by(key=key).first()
-        if not existing:
+        if key not in existing_keys:
             setting = Setting(key=key, value=value)
             session.add(setting)
             logger.info(f"初始化设置: {key} = {value}")
@@ -134,9 +140,9 @@ def init_achievements(session):
         },
     ]
 
+    existing_names = {a.name for a in session.query(Achievement.name).all()}
     for data in default_achievements:
-        existing = session.query(Achievement).filter_by(name=data["name"]).first()
-        if not existing:
+        if data["name"] not in existing_names:
             achievement = Achievement(**data)
             session.add(achievement)
             logger.info(f"初始化成就: {data['name']}")
@@ -181,9 +187,9 @@ def init_task_templates(session):
         },
     ]
 
+    existing_names = {t.name for t in session.query(TaskTemplate.name).all()}
     for data in default_templates:
-        existing = session.query(TaskTemplate).filter_by(name=data["name"]).first()
-        if not existing:
+        if data["name"] not in existing_names:
             template = TaskTemplate(**data)
             session.add(template)
             logger.info(f"初始化任务模板: {data['name']}")

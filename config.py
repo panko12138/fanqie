@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from typing import Dict, Optional, Any
+from urllib.parse import quote_plus
 from dotenv import load_dotenv
 
 
@@ -9,33 +10,33 @@ import threading
 
 class Config:
     """配置管理类，使用单例模式"""
-    
+
     _instance: Optional['Config'] = None
     _initialized: bool = False
     _lock = threading.Lock()
-    
+
     def __new__(cls, *args, **kwargs):
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def __init__(self, env_file: Optional[str] = None):
         if self._initialized:
             return
-            
+
         self._config = {}
         self._load_env(env_file)
         self._initialized = True
-    
+
     def _load_env(self, env_file: Optional[str] = None):
         """加载环境变量"""
         if env_file is None:
             env_file = Path(__file__).parent / '.env'
-        
+
         if env_file.exists():
             load_dotenv(env_file)
-        
+
         self._config = {
             'DB_HOST': os.getenv('DB_HOST', 'localhost'),
             'DB_PORT': int(os.getenv('DB_PORT', '3306')),
@@ -48,30 +49,36 @@ class Config:
             'LOG_LEVEL': os.getenv('LOG_LEVEL', 'INFO'),
             'BASE_DIR': Path(__file__).parent,
         }
-    
+
     def get(self, key: str, default=None):
         """获取配置项"""
         return self._config.get(key, default)
-    
+
     def set(self, key: str, value):
         """设置配置项（运行时）"""
         self._config[key] = value
-    
+
     def all(self):
         """获取所有配置"""
         return self._config.copy()
-    
+
     @property
     def db_url(self):
         """获取数据库连接URL"""
         return self.get_database_url()
-    
+
     def get_database_url(self):
-        """获取数据库连接URL"""
+        """获取数据库连接URL，对特殊字符进行编码"""
+        user = quote_plus(str(self.get('DB_USER', '')))
+        password = quote_plus(str(self.get('DB_PASSWORD', '')))
+        host = quote_plus(str(self.get('DB_HOST', 'localhost')))
+        port = self.get('DB_PORT', 3306)
+        db_name = quote_plus(str(self.get('DB_NAME', 'pomodoro_db')))
+        charset = quote_plus(str(self.get('DB_CHARSET', 'utf8mb4')))
         return (
-            f"mysql+mysqlconnector://{self.get('DB_USER')}:{self.get('DB_PASSWORD')}"
-            f"@{self.get('DB_HOST')}:{self.get('DB_PORT')}/{self.get('DB_NAME')}"
-            f"?charset={self.get('DB_CHARSET')}"
+            f"mysql+mysqlconnector://{user}:{password}"
+            f"@{host}:{port}/{db_name}"
+            f"?charset={charset}"
         )
 
 

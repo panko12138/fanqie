@@ -28,7 +28,7 @@ class NotificationManager(QObject):
                     self.sound_enabled = sound_setting.value.lower() == "true"
                 if notification_setting:
                     self.notification_enabled = notification_setting.value.lower() == "true"
-        except Exception as e:
+        except (ImportError, AttributeError, ValueError) as e:
             logger.warning(f"加载通知设置失败: {e}")
 
     def play_pomodoro_complete_sound(self):
@@ -57,7 +57,7 @@ class NotificationManager(QObject):
                     3000
                 )
                 logger.info("显示番茄完成通知")
-            except Exception as e:
+            except (RuntimeError, OSError) as e:
                 logger.warning(f"显示通知失败: {e}")
 
     def show_break_complete_notification(self):
@@ -72,7 +72,7 @@ class NotificationManager(QObject):
                     3000
                 )
                 logger.info("显示休息结束通知")
-            except Exception as e:
+            except (RuntimeError, OSError) as e:
                 logger.warning(f"显示通知失败: {e}")
 
     def get_break_messages(self) -> list:

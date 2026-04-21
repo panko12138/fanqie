@@ -1,9 +1,13 @@
 from enum import Enum
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, List, Dict
 from database import get_db_manager
 from models import PomodoroSession, Setting, DailyStat
 from utils.logger import get_logger
+
+if TYPE_CHECKING:
+    from statistics import StatisticsManager
 
 logger = get_logger(__name__)
 
@@ -20,10 +24,10 @@ class PomodoroTimer(QObject):
     state_changed = pyqtSignal(TimerState)
     pomodoro_completed = pyqtSignal(int)
     break_started = pyqtSignal(TimerState)
-    session_saved = pyqtSignal(int)  # 参数为会话ID
-    progress_updated = pyqtSignal(float)  # 新增进度更新信号
-    is_running_changed = pyqtSignal(bool)  # 运行状态变化信号
-    achievement_unlocked = pyqtSignal(list)  # 成就解锁信号
+    session_saved = pyqtSignal(int)
+    progress_updated = pyqtSignal(float)
+    is_running_changed = pyqtSignal(bool)
+    achievement_unlocked = pyqtSignal(list)
 
     def __init__(self):
         super().__init__()
@@ -53,7 +57,7 @@ class PomodoroTimer(QObject):
                 self.short_break_duration = int(settings_dict.get("short_break_duration", 300))
                 self.long_break_duration = int(settings_dict.get("long_break_duration", 900))
                 self.long_break_interval = int(settings_dict.get("long_break_interval", 4))
-        except Exception as e:
+        except (ValueError, TypeError, KeyError) as e:
             logger.warning(f"加载设置失败，使用默认值: {e}")
 
     def start(self):
@@ -129,7 +133,7 @@ class PomodoroTimer(QObject):
                 unlocked = stats_manager.check_and_unlock_achievements()
                 if unlocked:
                     self.achievement_unlocked.emit(unlocked)
-            except Exception as e:
+            except (ImportError, ValueError, TypeError) as e:
                 logger.error(f"检查成就解锁失败: {e}")
             self._transition_to_next_state()
         else:
@@ -137,12 +141,10 @@ class PomodoroTimer(QObject):
 
     def _transition_to_next_state(self):
         if self.state == TimerState.FOCUS:
-            if (self.completed_pomodoros % self.long_break_interval) == 0:
+            if self.completed_pomodoros > 0 and (self.completed_pomodoros % self.long_break_interval) == 0:
                 self._start_break(TimerState.LONG_BREAK)
             else:
                 self._start_break(TimerState.SHORT_BREAK)
-        elif self.state in [TimerState.SHORT_BREAK, TimerState.LONG_BREAK]:
-            self._start_focus()
         else:
             self._start_focus()
 
@@ -209,14 +211,14 @@ class PomodoroTimer(QObject):
                         task.actual_pomodoros += 1
 
                 self._update_daily_stat(session, completed)
-                
+
                 # 获取会话ID并在会话关闭前使用
                 session_id = session_record.id
                 # 发出信号，只传递会话ID
                 self.session_saved.emit(session_id)
                 logger.info(f"番茄会话已保存: {session_id}")
                 # session.commit() 由上下文管理器自动处理
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             logger.error(f"保存番茄会话失败: {e}")
 
     def _update_daily_stat(self, session, completed: bool):

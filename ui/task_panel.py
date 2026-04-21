@@ -178,12 +178,18 @@ class TaskEditDialog(QDialog):
         layout.addLayout(button_layout)
 
     def get_data(self) -> dict:
+        pomodoro_text = self.pomodoro_spin.text().strip()
+        try:
+            estimated_pomodoros = int(pomodoro_text) if pomodoro_text else 1
+        except ValueError:
+            estimated_pomodoros = 1
+
         return {
-            "name": self.name_edit.text(),
+            "name": self.name_edit.text().strip(),
             "subject": self.subject_combo.currentData(),
             "priority": self.priority_combo.currentData(),
-            "estimated_pomodoros": int(self.pomodoro_spin.text() or "1"),
-            "notes": self.notes_edit.toPlainText(),
+            "estimated_pomodoros": estimated_pomodoros,
+            "notes": self.notes_edit.toPlainText().strip(),
         }
 
 

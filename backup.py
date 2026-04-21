@@ -127,13 +127,13 @@ class BackupManager:
 
     def restore_backup(self, backup_path: str) -> bool:
         if not os.path.exists(backup_path):
-            logger.error(f"备份文件不存在: {backup_path}")
+            logger.error("备份文件不存在")
             return False
 
         try:
             with open(backup_path, "r", encoding="utf-8") as f:
                 backup_data = json.load(f)
-            
+
             if not self._validate_backup(backup_data):
                 logger.error("备份文件格式无效")
                 return False
@@ -146,99 +146,96 @@ class BackupManager:
                 session.query(Achievement).delete()
                 session.query(TaskTemplate).delete()
 
-                if "data" in backup_data:
-                    data = backup_data["data"]
+                data = backup_data.get("data", {})
 
-                    if "tasks" in data:
-                        for task_data in data["tasks"]:
-                            task = Task(
-                                id=task_data["id"],
-                                name=task_data["name"],
-                                subject=task_data["subject"],
-                                estimated_pomodoros=task_data["estimated_pomodoros"],
-                                actual_pomodoros=task_data["actual_pomodoros"],
-                                priority=task_data["priority"],
-                                status=task_data["status"],
-                                notes=task_data["notes"],
-                            )
-                            if task_data["created_at"]:
-                                task.created_at = datetime.fromisoformat(task_data["created_at"])
-                            if task_data["completed_at"]:
-                                task.completed_at = datetime.fromisoformat(task_data["completed_at"])
-                            session.add(task)
+                if "tasks" in data:
+                    for task_data in data["tasks"]:
+                        task = Task(
+                            id=task_data["id"],
+                            name=task_data["name"],
+                            subject=task_data["subject"],
+                            estimated_pomodoros=task_data["estimated_pomodoros"],
+                            actual_pomodoros=task_data["actual_pomodoros"],
+                            priority=task_data["priority"],
+                            status=task_data["status"],
+                            notes=task_data["notes"],
+                        )
+                        if task_data.get("created_at"):
+                            task.created_at = datetime.fromisoformat(task_data["created_at"])
+                        if task_data.get("completed_at"):
+                            task.completed_at = datetime.fromisoformat(task_data["completed_at"])
+                        session.add(task)
 
-                    if "pomodoro_sessions" in data:
-                        for session_data in data["pomodoro_sessions"]:
-                            pomodoro_session = PomodoroSession(
-                                id=session_data["id"],
-                                task_id=session_data["task_id"],
-                                duration=session_data["duration"],
-                                completed=session_data["completed"],
-                            )
-                            if session_data["start_time"]:
-                                pomodoro_session.start_time = datetime.fromisoformat(session_data["start_time"])
-                            if session_data["end_time"]:
-                                pomodoro_session.end_time = datetime.fromisoformat(session_data["end_time"])
-                            if session_data["created_at"]:
-                                pomodoro_session.created_at = datetime.fromisoformat(session_data["created_at"])
-                            session.add(pomodoro_session)
+                if "pomodoro_sessions" in data:
+                    for session_data in data["pomodoro_sessions"]:
+                        pomodoro_session = PomodoroSession(
+                            id=session_data["id"],
+                            task_id=session_data["task_id"],
+                            duration=session_data["duration"],
+                            completed=session_data["completed"],
+                        )
+                        if session_data.get("start_time"):
+                            pomodoro_session.start_time = datetime.fromisoformat(session_data["start_time"])
+                        if session_data.get("end_time"):
+                            pomodoro_session.end_time = datetime.fromisoformat(session_data["end_time"])
+                        if session_data.get("created_at"):
+                            pomodoro_session.created_at = datetime.fromisoformat(session_data["created_at"])
+                        session.add(pomodoro_session)
 
-                    if "daily_stats" in data:
-                        for stat_data in data["daily_stats"]:
-                            stat = DailyStat(
-                                date=datetime.fromisoformat(stat_data["date"]).date(),
-                                total_pomodoros=stat_data["total_pomodoros"],
-                                total_focus_time=stat_data["total_focus_time"],
-                                tasks_completed=stat_data["tasks_completed"],
-                                daily_goal=stat_data["daily_goal"],
-                                goal_achieved=stat_data["goal_achieved"],
-                            )
-                            session.add(stat)
+                if "daily_stats" in data:
+                    for stat_data in data["daily_stats"]:
+                        stat = DailyStat(
+                            date=datetime.fromisoformat(stat_data["date"]).date(),
+                            total_pomodoros=stat_data["total_pomodoros"],
+                            total_focus_time=stat_data["total_focus_time"],
+                            tasks_completed=stat_data["tasks_completed"],
+                            daily_goal=stat_data["daily_goal"],
+                            goal_achieved=stat_data["goal_achieved"],
+                        )
+                        session.add(stat)
 
-                    if "settings" in data:
-                        for setting_data in data["settings"]:
-                            setting = Setting(
-                                key=setting_data["key"],
-                                value=setting_data["value"],
-                            )
-                            if setting_data["updated_at"]:
-                                setting.updated_at = datetime.fromisoformat(setting_data["updated_at"])
-                            session.add(setting)
+                if "settings" in data:
+                    for setting_data in data["settings"]:
+                        setting = Setting(
+                            key=setting_data["key"],
+                            value=setting_data["value"],
+                        )
+                        if setting_data.get("updated_at"):
+                            setting.updated_at = datetime.fromisoformat(setting_data["updated_at"])
+                        session.add(setting)
 
-                    if "achievements" in data:
-                        for achievement_data in data["achievements"]:
-                            achievement = Achievement(
-                                id=achievement_data["id"],
-                                name=achievement_data["name"],
-                                description=achievement_data["description"],
-                                icon=achievement_data["icon"],
-                                condition=achievement_data["condition"],
-                            )
-                            if achievement_data["unlocked_at"]:
-                                achievement.unlocked_at = datetime.fromisoformat(achievement_data["unlocked_at"])
-                            if achievement_data["created_at"]:
-                                achievement.created_at = datetime.fromisoformat(achievement_data["created_at"])
-                            session.add(achievement)
+                if "achievements" in data:
+                    for achievement_data in data["achievements"]:
+                        achievement = Achievement(
+                            id=achievement_data["id"],
+                            name=achievement_data["name"],
+                            description=achievement_data["description"],
+                            icon=achievement_data["icon"],
+                            condition=achievement_data["condition"],
+                        )
+                        if achievement_data.get("unlocked_at"):
+                            achievement.unlocked_at = datetime.fromisoformat(achievement_data["unlocked_at"])
+                        if achievement_data.get("created_at"):
+                            achievement.created_at = datetime.fromisoformat(achievement_data["created_at"])
+                        session.add(achievement)
 
-                    if "task_templates" in data:
-                        for template_data in data["task_templates"]:
-                            template = TaskTemplate(
-                                id=template_data["id"],
-                                name=template_data["name"],
-                                subject=template_data["subject"],
-                                estimated_pomodoros=template_data["estimated_pomodoros"],
-                                description=template_data["description"],
-                                is_default=template_data["is_default"],
-                            )
-                            if template_data["created_at"]:
-                                template.created_at = datetime.fromisoformat(template_data["created_at"])
-                            session.add(template)
+                if "task_templates" in data:
+                    for template_data in data["task_templates"]:
+                        template = TaskTemplate(
+                            id=template_data["id"],
+                            name=template_data["name"],
+                            subject=template_data["subject"],
+                            estimated_pomodoros=template_data["estimated_pomodoros"],
+                            description=template_data["description"],
+                            is_default=template_data["is_default"],
+                        )
+                        if template_data.get("created_at"):
+                            template.created_at = datetime.fromisoformat(template_data["created_at"])
+                        session.add(template)
 
-                session.commit()
-
-            logger.info(f"恢复备份成功: {backup_path}")
+            logger.info("恢复备份成功")
             return True
-        except Exception as e:
+        except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
             logger.error(f"恢复备份失败: {e}")
             return False
 

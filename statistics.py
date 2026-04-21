@@ -89,20 +89,6 @@ class StatisticsManager:
                 current_date += timedelta(days=1)
             return result
 
-    def get_subject_distribution(self) -> Dict[str, int]:
-        with self.db_manager.session() as session:
-            result = session.query(
-                Task.subject,
-                func.sum(Task.actual_pomodoros).label("total")
-            ).filter(Task.actual_pomodoros > 0).group_by(Task.subject).all()
-
-            distribution = {row[0]: row[1] for row in result}
-            total = sum(distribution.values())
-            return {
-                "distribution": distribution,
-                "total": total,
-            }
-
     def get_total_stats(self, session=None) -> Dict:
         if session:
             return self._get_total_stats_with_session(session)

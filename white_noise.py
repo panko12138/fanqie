@@ -15,11 +15,17 @@ class WhiteNoisePlayer(QObject):
     def __init__(self):
         super().__init__()
         self.player = QMediaPlayer()
-        self.player.setMedia(QMediaContent())
+        self._clear_media()
         self.is_playing = False
         self.volume = 50
         self.current_noise = None
         self.available_noises = self._scan_noises()
+
+    def _clear_media(self):
+        try:
+            self.player.setMedia(QMediaContent())
+        except AttributeError:
+            self.player.setSource(QUrl())
 
     def _scan_noises(self) -> list:
         noises_dir = os.path.join(get_resources_path(), "sounds", "white_noise")
